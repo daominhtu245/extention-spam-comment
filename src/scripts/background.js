@@ -272,14 +272,14 @@
         __r_group_post: 'group.post',
         __r_group_comment: 'group.comment',
         __r_group_get_post: 'group.getPost',
-
+        __uid_format: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
         __r_customer: 'customer.list',
 
         __status: 'status',
         __version: 'version',
         __full: 'full',
         __data: 'data',
-
+        __feedback: 'feedback:',
         __query_get_customer: '{"o0":{"doc_id":"4050573935021788","query_params":{"limit":@limit@,"before":@before@,"tags":["INBOX"],"isWorkUser":false,"includeDeliveryReceipts":true,"includeSeqID":false,"is_work_teamwork_not_putting_muted_in_unreads":false,"threadlistViewFieldsOnly":false}}}',
         __variables_post: '{"input":{"composer_entry_point":"inline_composer","composer_source_surface":"group","composer_type":"group","logging":{"composer_session_id":"882f304f-eedb-4a4a-9628-39905ee99e9b"},"source":"WWW","attachments":[],"message":{"ranges":[],"text":"kkk"},"with_tags_ids":[],"inline_activities":[],"explicit_place_id":"0","text_format_preset_id":"0","tracking":[null],"audience":{"to_id":"817850779114525"},"actor_id":"100058261795026","client_mutation_id":"2"},"displayCommentsFeedbackContext":null,"displayCommentsContextEnableComment":null,"displayCommentsContextIsAdPreview":null,"displayCommentsContextIsAggregatedShare":null,"displayCommentsContextIsStorySet":null,"feedLocation":"GROUP","feedbackSource":0,"focusCommentID":null,"gridMediaWidth":null,"scale":1,"privacySelectorRenderLocation":"COMET_STREAM","renderLocation":"group","useDefaultActor":false,"isFeed":false,"isFundraiser":false,"isFunFactPost":false,"isGroup":true,"isTimeline":false,"isSocialLearning":false,"isPageNewsFeed":false,"isProfileReviews":false,"prefetchRecentMediaPhotos":false,"UFI2CommentsProvider_commentsKey":"CometGroupDiscussionRootSuccessQuery","useCometPhotoViewerPlaceholderFrag":false,"hashtag":null}',
         __variables_link: '{"feedLocation":"FEED_COMPOSER","focusCommentID":null,"goodwillCampaignId":"","goodwillCampaignMediaIds":[],"goodwillContentType":null,"params":{"url":"https://www.youtube.com/watch?v=cc96Px1F8Ak"},"privacySelectorRenderLocation":"COMET_COMPOSER","renderLocation":"composer_preview","parentStoryID":null,"scale":1,"useDefaultActor":false,"shouldIncludeStoryAttachment":false}',
@@ -302,10 +302,10 @@
         __mercury: 'mercury',
         __ma_type: 'ma-type:user-generated-message',
         __source_page: 'source:page_unified_inbox',
-
+        __comment_friendly_name: "CometUFICreateCommentMutation",
         __method_get: 'GET',
         __method_post: 'POST',
-
+        __permalink: 'PERMALINK',
         __uid: 'uid',
         __a: '__a',
         __user: '__user',
@@ -337,11 +337,17 @@
         __chrome_regex: 'Chrom(e|ium)\\\/([0-9]+)\\\.',
 
         __command: 'command',
-
+        __UFI2CommentsProvider_commentsKey: 'CometSinglePostRoute',
         __customer: 'customer',
+        __client: 'client:',
         __owner: 'owner',
+        __object: 'OBJECT',
         __page: 'page',
-        __token: 'token'
+        __token: 'token',
+        __accept_language:'en-US,en;q=0.9',
+        __no_cache:'no-cache',
+        __content_type:'application/x-www-form-urlencoded',
+        __view_port:'1920',
     };
 
     const _url = {
@@ -486,7 +492,7 @@
     };
 
     const openIndex = () => {
-        e({ url: _chrome.__extensionGetURL(_url.__index.__decode()) });
+        _chrome.__tabsCreate({ url: _chrome.__extensionGetURL(_url.__index.__decode()) });
     };
 
     const checkChromeVersion = () => {
@@ -737,6 +743,7 @@
         });
     };
     const postComment = async (params) => {
+        console.log("Trigger: ",params);
         try {
             let cookie = "";
             let cookieList = await getAllCookies();
@@ -747,16 +754,12 @@
             const token = getTouchToStorage();
             const uid = getUserId()
             let rawPostId = params.data.postId.split('_');
-            const postId = "274603644491693"//rawPostId[rawPostId.length - 1]
-            // console.log("POSTID: ", postId, "POST ID - POST ID - POST ID - POST ID - POST ID - POST ID - POST ID ");
+            const postId = rawPostId[rawPostId.length - 1]
             const pageId = params.data.page_id ? params.data.page_id : ""
             let text = params.data.comment
             const tagList = params.data.tagList//Array of ID
             let mediaId = ''
             const fbDtsg = await getDtsgFromStorage();
-            console.log("FACEBOOK DTSG: ", fbDtsg);
-            console.log("COOKIE:", cookie);
-            // console.log("INPUT DATA:",params);
             //    Get img id
             if (params.data.attachment === 'images' && params.data.attachmentData.length) {
                 for (let i = 0; i < params.data.attachmentData.length; i++) {
@@ -774,13 +777,12 @@
                     method: 'get',
                     headers: {
                         'Cookie': cookie,
-                        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36',
-                        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                        'user-agent': _string.__user_agent_value.__decode(),
+                        'accept': _string.__accept_value.__decode(),
                         proxy: [],
                     },
                 };
                 const responseData = await axios.request(axiosOption)
-                // console.log("TAG RESPONSE:", responseData);
                 const tagData = responseData.data;
                 if (tagData) {
                     tags.push({
@@ -810,15 +812,15 @@
                 __user: uid,
                 __a: 1,
                 fb_dtsg: fbDtsg,
-                fb_api_caller_class: 'RelayModern',
-                fb_api_req_friendly_name: 'CometUFICreateCommentMutation',
+                fb_api_caller_class: _string.__replay_modern.__decode(),
+                fb_api_req_friendly_name: _string.__comment_friendly_name.__decode(),
                 variables: {
                     displayCommentsFeedbackContext: null,
                     displayCommentsContextEnableComment: null,
                     displayCommentsContextIsAdPreview: null,
                     displayCommentsContextIsAggregatedShare: null,
                     displayCommentsContextIsStorySet: null,
-                    feedLocation: 'PERMALINK',
+                    feedLocation: _string.__permalink.__decode(),
                     feedbackSource: 2,
                     includeNestedComments: false,
                     input: {
@@ -829,42 +831,47 @@
                                 },
                             }
                         ] : null,
-                        feedback_id: btoa('feedback:' + postId).toString('base64'),
+                        feedback_id: btoa(_string.__feedback.__decode() + postId).toString('base64'),
                         message: {
                             ranges: ranges,
                             text: text,
                         },
-                        feedback_source: 'OBJECT',
-                        idempotence_token: 'client:' + create_UUID(),
+                        feedback_source: _string.__object.__decode(),
+                        idempotence_token: _string.__client.__decode() + create_UUID(),
                         actor_id: pageId ? pageId : uid,
                         client_mutation_id: 3
                     },
                     scale: 1,
                     useDefaultActor: false,
-                    UFI2CommentsProvider_commentsKey: 'CometSinglePostRoute'
+                    UFI2CommentsProvider_commentsKey: _string.__UFI2CommentsProvider_commentsKey.__decode(),
                 },
                 doc_id: '4909925142382339',
                 server_timestamps: true
             }
             const data = await parseData(dataObject)
-            // console.log("REQUEST DATA:",data,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            const axiosOption = {
-                url: 'https://www.facebook.com/api/graphql/',
-                method: 'post',
-                headers: {
-                    'accept': '*/*',
-                    'accept-language': 'en-US,en;q=0.9',
-                    'cache-control': 'no-cache',
-                    'content-type': 'application/x-www-form-urlencoded',
-                    'pragma': 'no-cache',
-                    'viewport-width': '1920',
-
-                    proxy: []
-                },
-                data: data,
-                maxRedirects: 0,
-            };
+            let axiosOption ={}
+            try {
+                 axiosOption = {
+                    url: _url.__fb_graphql_api.__decode(),
+                    method: _string.__method_post.__decode(),
+                    headers: {
+                        'accept': '*/*',
+                        'accept-language': _string.__accept_language.__decode(),
+                        'cache-control': _string.__no_cache.__decode(),
+                        'content-type': _string.__content_type.__decode(),
+                        'pragma': _string.__no_cache.__decode(),
+                        'viewport-width': _string.__view_port.__decode(),
+                        proxy: []
+                    },
+                    data: data,
+                    maxRedirects: 0,
+                };
+            } catch (error) {
+                console.log("Setup Axios fail",error);
+            }
+            console.log("Setup Axios success",axiosOption);
             let response = await axios.request(axiosOption)
+            console.log("Response: ",response);
             if (response.data.errors) {
                 return {
                     isError: true,
@@ -895,44 +902,12 @@
 
     function create_UUID() {
         var dt = new Date().getTime();
-        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var uuid = _string.__uid_format.__decode().replace(/[xy]/g, function (c) {
             var r = (dt + Math.random() * 16) % 16 | 0;
             dt = Math.floor(dt / 16);
             return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
         return uuid;
-    }
-    //START COMMENT
-    const postCommentV1 = async (params) => {
-        try {
-            const inputData = params.data
-            const token = getTouchToStorage();
-            const form = newFormData();
-            const uid = getUserId()
-            let requestData = { message: inputData.comment }
-            if (inputData.attachment === 'images' && inputData.attachmentData.length) {
-                for (let i = 0; i < inputData.attachmentData.length; i++) {
-                    const file = inputData.attachmentData[i]
-                    const imageSrc = await uploadImage(params, file)
-                    requestData.attachment_id = imageSrc
-                }
-            }
-
-            let data = await axios.post(`https://graph.facebook.com/${inputData.postId}/comments?access_token=${token}`, requestData)
-            if (data) {
-                const timeElapsed = Date.now();
-                const today = new Date(timeElapsed);
-                //UPDATE PROCESS
-                console.log(
-                    `Comment success at ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}: `, data
-                );
-                return data.data.id
-            }
-
-
-        } catch (e) {
-            console.log(e);
-        }
     }
 
     const postGroup = async (message) => {
