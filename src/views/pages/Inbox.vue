@@ -1,492 +1,552 @@
 <template>
-    <v-container
-            id="filter-friend"
-            fluid
-            tag="section"
+  <v-container id="filter-friend" fluid tag="section">
+    <!-- HEADER -->
+    <v-row>
+      <v-card class="px-0 py-0 mt-5 pb-3 mb-0 pt-3" style="width: 100%">
+        <v-card-title style="justify-content: center">
+          AUTO COMMENT TOOLS
+        </v-card-title>
+      </v-card>
+      <dashboard-core-drawer> </dashboard-core-drawer>
+    </v-row>
+    <!-- CONTENT -->
+    <v-row>
+      <v-col md="12" sm="12" style="height: 100%">
+        <comment-editor></comment-editor>
+      </v-col>
+      <v-col md="12" sm="12" style="height: 100%">
+        <group-table></group-table>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col sm="12">
+        <v-card
+          class="px-0 py-0 mt-5 mb-0 pt-3"
+          style="padding: 10px !important"
+        >
+          <!-- START / STOP BUTTON -->
+          <v-row style="margin: 15px; justify-content: center">
+            <v-btn
+              depressed
+              color="primary"
+              @click="startComment"
+              :disabled="isProgressing"
+            >
+              Start Comment</v-btn
+            >
+            <v-btn
+              depressed
+              color="error"
+              @click="stopComment"
+              :disabled="!isProgressing"
+            >
+              Stop!</v-btn
+            >
+          </v-row>
+          <!-- Current GROUP -->
+          <v-row
+            v-html="currentGroup"
+            style="margin: 15px; justify-content: center"
+          >
+            {{ currentGroup }}
+          </v-row>
+          <!-- Progress Bar -->
+          <v-row style="margin: 15px; justify-content: center">
+            <v-progress-linear
+              color="light-green darken-4"
+              height="30"
+              striped
+              :buffer-value="progressBar"
+              stream
+            ></v-progress-linear>
+          </v-row>
+          <!-- Progress Table -->
+          <v-row style="margin: 15px; justify-content: center">
+            <table border="1">
+              <thead class="progress-table-header">
+                <tr>
+                  <th style="color: blue">On Progress</th>
+                  <th style="color: green">Finish</th>
+                  <th style="color: red">Error</th>
+                </tr>
+              </thead>
+              <tbody class="progress-table-body">
+                <tr>
+                  <td style="color: blue">{{ sendding }}</td>
+                  <td style="color: green">{{ success }}</td>
+                  <td style="color: red">{{ error }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </v-row>
+          <div v-html="logger" style="margin: 15px; justify-content: center">
+            {{ logger }}
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- FIXED BUTTON TO TOP -->
+    <v-btn
+      class="font-weight-bold"
+      v-if="statusPost === 'processing' || statusPost === 'wait'"
+      color="blue darken-3"
+      x-large
+      fixed
+      bottom
+      right
+      style="z-index: 99; bottom: 80px; right: 0"
+      elevation="7"
+      @click="dialog = true"
     >
-        <detail></detail>
-        <choice-group></choice-group>
-        <edit-message></edit-message>
-        <v-dialog
-                v-model="dialog"
-                width="1400"
-        >
-            <v-card>
-                <v-card-title class="grey lighten-5">
-                    <v-progress-linear
-                            color="purple darken-4"
-                            :value="percent"
-                            striped
-                            height="25"
-                            text-color="white"
-                    >
-                        <template v-slot:default="{ value }">
-                            <strong style="color: #fff">{{ Math.ceil(value) }}%</strong>
-                        </template>
-                    </v-progress-linear>
-                    <p>
-                        <v-chip
-                                large
-                                label
-                                color="grey darken-3"
-                                class="ma-2"
-                                text-color="white"
-                        >
-                            {{ $t('total') }}: {{ groupsStart.length }}
-                        </v-chip>
-                        <v-chip
-                                large
-                                label
-                                class="ma-2"
-                                color="green darken-4"
-                                text-color="white"
-                        >
-                            {{ $t('success') }}: {{ groupsDone.length }}
-                        </v-chip>
-                        <v-chip
-                                large
-                                label
-                                class="ma-2"
-                                color="deep-orange darken-4"
-                                text-color="white"
-                        >
-                            {{ $t('error') }}: {{ groupsError.length }}
-                        </v-chip>
-                        <v-chip
-                                large
-                                label
-                                class="ma-2"
-                                color="blue-grey darken-4"
-                                text-color="white"
-                        >
-                            {{ $t('remain') }}: {{ groupsStart.length - numGroupPost }}
-                        </v-chip>
-                        <span style="font-size: 14px" class="font-weight-bold">{{ $t('status') }}:</span>
-                        <v-chip
-                                class="ma-2"
-                                :color="statusInboxList[statusPost]['color']"
-                                text-color="white"
-                        >
-                            {{ statusInboxList[statusPost]['label'] }}
-                        </v-chip>
-                    </p>
-                </v-card-title>
-
-                <v-card-text class="pb-2 pt-1">
-                    <v-row>
-                        <v-col cols="12" sm="12" class="pt-0 pb-5" style="position: relative">
-                            <p v-html="logger"
-                               style="height: 300px;overflow: auto;background-color: rgb(243 243 243)"></p>
-                        </v-col>
-                    </v-row>
-                </v-card-text>
-
-                <v-card-text class="pt-0">
-                    <v-progress-linear
-                            v-for="(group, index) in groupsProcessing"
-                            :key="index"
-                            :color="group.color"
-                            :value="group.percent"
-                            striped
-                            rounded
-                            height="14"
-                            class="mb-2"
-                    >
-                        <template v-slot:default="{ value }">
-                            <strong style="font-size: 11px">{{ group.name }} ({{ Math.ceil(value) }}%)</strong>
-                        </template>
-                    </v-progress-linear>
-                </v-card-text>
-
-                <v-divider></v-divider>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn class="font-weight-bold"
-                           color="deep-orange darken-3"
-                           @click="stopPost"
-                           v-if="loading1 && groupsStart != '' && statusPost == 'processing'"
-                    >
-                         <span class="custom-loader mr-1">
-                            <v-icon light>mdi-stop</v-icon>
-                        </span>
-                        {{ $t('stop') }}
-                    </v-btn>
-
-                    <v-btn class="font-weight-bold"
-                           color="red darken-4"
-                           @click="cancelPost"
-                           v-if="loading1 && groupsStart != '' && statusPost == 'processing'"
-                    >
-                         <span class="mr-1">
-                            <v-icon light>mdi-close-box</v-icon>
-                        </span>
-                        {{ $t('cancel') }}
-                    </v-btn>
-
-                    <v-btn class="font-weight-bold"
-                           v-if="loading1 && groupsStart != '' && statusPost != 'processing'"
-                           color="teal darken-4"
-                           @click="startPost"
-                    >
-                        {{ $t('start') }}
-                        <v-icon right dark>
-                            mdi-airplane
-                        </v-icon>
-                    </v-btn>
-
-                    <v-btn class="font-weight-bold"
-                           v-if="!loading1 && groupsStart != ''"
-                           color="teal darken-4"
-                           @click="continuePost"
-                    >
-                        {{ $t('continue') }}
-                        <v-icon right dark>
-                            mdi-play
-                        </v-icon>
-                    </v-btn>
-
-                    <v-btn class="font-weight-bold"
-                           v-if="groupsStart != '' && groupsStart != '' && statusPost == 'processing'"
-                           color="teal darken-4"
-                           @click="dialog = false"
-                    >
-                        {{ $t('play_background') }}
-                        <v-icon right dark>
-                            mdi-arrow-down-bold-circle
-                        </v-icon>
-                    </v-btn>
-
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
-
-        <v-btn class="font-weight-bold"
-               v-if="statusPost === 'stop' || statusPost === 'done'"
-               color="blue darken-4"
-               x-large
-               fixed
-               bottom
-               right
-               style="z-index: 99; bottom: 80px; right: 0"
-               elevation="7"
-               @click="startPost"
-        >
-            {{ $t('start_post') }}
-            <v-icon right dark>
-                mdi-airplane
-            </v-icon>
-        </v-btn>
-        <v-btn class="font-weight-bold"
-               v-if="statusPost === 'processing' || statusPost === 'wait'"
-               color="blue darken-3"
-               x-large
-               fixed
-               bottom
-               right
-               style="z-index: 99; bottom: 80px; right: 0"
-               elevation="7"
-               @click="dialog = true"
-        >
-            {{ $t('view_process') }}
-            <v-icon right dark>
-                mdi-eye
-            </v-icon>
-        </v-btn>
-
-    </v-container>
+      {{ $t("view_process") }}
+      <v-icon right dark> mdi-eye </v-icon>
+    </v-btn>
+  </v-container>
 </template>
 
 <script>
-  import { mapGetters, mapState } from 'vuex'
-  import { downloadTextArea, getRndInteger, blobToDataURL } from '../../helper/util'
+import { mapGetters, mapState } from "vuex";
+import {
+  downloadTextArea,
+  getRndInteger,
+  blobToDataURL,
+} from "../../helper/util";
+import CommentEditor from "../components/comment/CommentEditor.vue";
+import GroupTable from "../components/comment/GroupTable.vue";
 
-  export default {
-    name: 'Inbox',
-    components: {
-      Detail: () => import('../components/inbox/Detail'),
-      EditMessage: () => import('../components/inbox/EditMessage'),
-      ChoiceGroup: () => import('../components/inbox/ChoiceGroup'),
-    },
+export default {
+  name: "Inbox",
+  components: {
+    CommentEditor: () => import("../components/comment/CommentEditor"),
+    GroupTable: () => import("../components/comment/GroupTable"),
+    DashboardCoreDrawer: () => import("../components/core/Drawer"),
+    DashboardCoreAppBar: () => import("../components/core/AppBar"),
+  },
 
-    created () {
-      this.statusInboxList = {
+  created() {
+    this.statusInboxList = {
+      wait: {
+        color: "teal darken-3",
+        label: this.$t("wait"),
+      },
+      processing: {
+        color: "blue darken-3",
+        label: this.$t("process"),
+      },
+      done: {
+        color: "green darken-3",
+        label: this.$t("done"),
+      },
+      stop: {
+        color: "red darken-3",
+        label: this.$t("stop"),
+      },
+    };
+  },
+
+  data() {
+    return {
+      isProgressing: false,
+      progressBar: 0,
+      logger: "",
+      //count comment
+      numSend: 0,
+      sendding: 0,
+      success: 0,
+      error: 0,
+      onSendding: [],
+      currentGroup: "",
+      statusPost: "stop",
+      dialog: false,
+      content: "",
+      icons: [
+        "🙂🙂",
+        "😀",
+        "😄",
+        "😆",
+        "😅",
+        "😂",
+        "🤣",
+        "😊",
+        "☺️",
+        "😌",
+        "😉",
+        "😏",
+        "😍",
+        "😘",
+        "😗",
+        "😙",
+        "😚",
+        "🤗",
+        "♥️",
+        "💙",
+        "😺",
+        "😸",
+        "😹",
+        "😻",
+        "😼",
+        "😽",
+        "🙀",
+        "🌺",
+      ],
+      statusInboxList: {
         wait: {
-          color: 'teal darken-3',
-          label: this.$t('wait')
+          color: "teal darken-3",
+          label: "Wait",
         },
         processing: {
-          color: 'blue darken-3',
-          label: this.$t('process')
+          color: "blue darken-3",
+          label: "Processing",
         },
         done: {
-          color: 'green darken-3',
-          label: this.$t('done')
+          color: "green darken-3",
+          label: "Done",
         },
         stop: {
-          color: 'red darken-3',
-          label: this.$t('stop')
+          color: "red darken-3",
+          label: "Stop",
         },
+      },
+      loading1: false,
+      timeRemain: 0,
+    };
+  },
+
+  beforeDestroy() {},
+
+  computed: {
+    ...mapState([
+      "contentText",
+      "attachment",
+      "attachmentData",
+      "groups",
+      "timeDelay",
+      "randomImage",
+      "randomLink",
+      "randomStream",
+      "randomFile",
+      "choiceTime",
+      "minTime",
+      "maxTime",
+      "regime",
+    ]),
+  },
+
+  watch: {},
+
+  methods: {
+    combineContent(group) {
+      try {
+        const contentChoice =
+          this.contentText[Math.floor(Math.random() * this.contentText.length)];
+        // HANDLE GROUP NAME
+        this.content = contentChoice.replaceAll("{group}", group.name);
+        // HANDLE RANDOM ICON
+        this.content = this.content.replaceAll(
+          "{icon}",
+          this.icons[Math.floor(Math.random() * this.icons.length)]
+        );
+
+        this.handleTime();
+        this.handleRandomText();
+        this.handleTag();
+        this.handleSpin();
+        return this.content;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    handleTime() {
+      const today = new Date();
+      const time =
+        today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+      this.content = this.content.replaceAll("{time}", time);
+    },
+
+    handleRandomText() {
+      let stringLength = 7;
+      let randomString = "";
+      let characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+      for (let i = 0; i < stringLength; i++) {
+        randomString += characters.charAt(
+          Math.floor(Math.random() * characters.length)
+        );
+      }
+      this.content = this.content.replaceAll("{random}", randomString);
+    },
+
+    async handleTag() {
+      const tags = this.content.match(/\{@((()[^\}])*@)\}/gm);
+      let tagList = [];
+      if (tags) {
+        for (let i = 0; i < tags.length; i++) {
+          const tag = tags[i];
+          const result = tag.replaceAll("{@", "").replaceAll("@}", "");
+          tagList.push(result);
+          this.content = this.content.replaceAll(tag, result);
+        }
+      }
+      await this.$store.commit("set_tag_list", tagList);
+      console.log("TAG LIST:", this.$store.state.tagList);
+    },
+
+    handleSpin() {
+      const spins = this.content.match(/\{((()[^\}])*)\}/gm);
+      if (spins) {
+        for (let i = 0; i < spins.length; i++) {
+          const spin = spins[i];
+          const spinSplit = spin
+            .replaceAll("{", "")
+            .replaceAll("}", "")
+            .split("|");
+          const spinGet =
+            spinSplit[Math.floor(Math.random() * spinSplit.length)];
+          this.content = this.content.replaceAll(spin, spinGet);
+        }
       }
     },
 
-    data () {
-      return {
-        logger: '',
-        numSend: 0,
-        statusPost: 'stop',
-        dialog: false,
-        groupsStart: [],
-        groupsDone: [],
-        groupsError: [],
-        groupsProcessing: [],
-        numGroupPost: 0,
-        content: '',
-        icons: ['🙂🙂', '😀', '😄', '😆', '😅', '😂', '🤣', '😊', '☺️', '😌', '😉', '😏', '😍', '😘', '😗', '😙', '😚', '🤗', '♥️', '💙', '😺', '😸', '😹',
-          '😻', '😼', '😽', '🙀', '🌺'],
-        statusInboxList: {
-          wait: {
-            color: 'teal darken-3',
-            label: 'Wait'
-          },
-          processing: {
-            color: 'blue darken-3',
-            label: 'Processing'
-          },
-          done: {
-            color: 'green darken-3',
-            label: 'Done'
-          },
-          stop: {
-            color: 'red darken-3',
-            label: 'Stop'
-          },
-        },
-        loading1: false,
-        timeRemain: 0
+    //Get post to spam comment
+    async getGroupPost(group) {
+      let post = await this.$store.dispatch("getGroupPost", {
+        groupId: group.id,
+        limit: this.$store.state.limitPost,
+      });
+      return post.data;
+    },
+
+    async startComment() {
+      const listGroupId = this.$store.state.groups;
+      const allGroup = this.$store.state.groupsList;
+
+      if (listGroupId.length == 0) {
+        alert(this.$t("pls_choice_post"));
+        return;
+      }
+      if (this.maxTime < this.minTime && this.choiceTime === "range") {
+        alert(this.$t("pls_time"));
+        return;
+      }
+      // Time delay for each comment
+      let timeGetPost = 0,
+        timeComment = 0;
+
+      // PROGRESS CONTROL
+      this.isProgressing = true;
+      this.sendding = listGroupId.length * this.$store.state.limitPost;
+      this.numSend = this.sendding;
+      this.error = 0;
+      this.success = 0;
+      this.logger = "";
+      this.progressBar = 0;
+      this.currentGroup = `<p style="color:#9c27b0;font-weight:bold"> ${this.$t(
+        "start_comment_process"
+      )}</p>`;
+
+      for (const group of allGroup) {
+        if (listGroupId.indexOf(group.id) > -1) {
+          // GET POST OF GROUP LOOP
+          let step = parseInt(
+            this.choiceTime === "range"
+              ? getRndInteger(this.minTime, this.maxTime)
+              : this.timeDelay
+          );
+          timeGetPost += step;
+          let getPostTimeout = setTimeout(async () => {
+            console.log("Get Post !!!!");
+            let comment = this.combineContent(group);
+            let postList = await this.getGroupPost(group);
+            //let postList = ["123"];
+            postList.map((postId) => {
+              // XÁC ĐỊNH GROUP ĐANG TÌM POST
+              this.currentGroup = `<p style="color:#0084c6;font-weight:bold"> ${
+                this.$t("find_post") + group.name
+              }</p>`;
+              //Start comment
+              timeComment += step;
+              let getCommentTimeout = setTimeout(() => {
+                // console.log("Comment:", comment);
+                //XÁC ĐỊNH GROUP ĐANG COMMENT
+                this.currentGroup = `<p style="color:#4caf50;font-weight:bold"> ${
+                  this.$t("create_comment") + group.name
+                }</p>`;
+
+                this.postComment(postId, comment, group);
+              }, timeComment * 1000);
+              this.onSendding.push(getCommentTimeout);
+            });
+          }, timeGetPost * 1000);
+          this.onSendding.push(getPostTimeout);
+        }
       }
     },
 
-    beforeDestroy () {
+    async stopComment() {
+      for (let i = 0; i < this.onSendding.length; i++) {
+        clearTimeout(this.onSendding[i]);
+      }
+      this.progressBar = 0;
+      this.sendding = 0;
+      this.onSendding = [];
+      this.isProgressing = false;
+      this.currentGroup = `<p style="color:red;font-weight:bold"> ${
+        this.$t("cancel_comment_process")
+      }</p>`;
     },
 
-    computed: {
-      ...mapState(['contentText', 'attachment', 'attachmentData', 'groups', 'timeDelay', 'randomImage', 'randomLink',
-        'randomStream', 'randomFile', 'choiceTime', 'minTime', 'maxTime', 'regime']),
+    async postComment(postId, comment, group) {
+      // Handle Upload Attachment
+      let attachmentArray = this.attachment;
+      if (this.regime === "regime_text") {
+        attachmentArray = ["text"];
+      } else if (this.regime === "regime_text_file") {
+        attachmentArray = ["text"].concat(
+          this.attachment.filter((item) => ["files", "images"].includes(item))
+        );
+      } else if (
+        this.regime === "regime_file" &&
+        this.attachmentData["images"]
+      ) {
+        attachmentArray =
+          this.attachmentData["images"].length > 0 ? ["images"] : ["text"];
+        console.log(
+          "Attachment State Length:",
+          this.attachmentData["images"].length
+        );
+      }
+      const attachment =
+        attachmentArray[Math.floor(Math.random() * attachmentArray.length)];
+      let attachmentData = null;
+      if (attachment === "images") {
+        const dt = this.attachmentData["images"];
+        attachmentData = [dt[Math.floor(Math.random() * dt.length)]];
+      }
+      console.log("Attachment Type: ", attachment);
+      console.log("ATTACHMENT DATA: ", attachmentData);
 
-      percent () {
-        const total = this.groupsStart.length
-        return total !== 0 ? Math.floor(this.numGroupPost / total * 100) : 0
-      },
-    },
-
-    watch: {},
-
-    methods: {
-      combineContent (group) {
-        const contentChoice = this.contentText[Math.floor(Math.random() * this.contentText.length)]
-
-        this.content = contentChoice.replaceAll('@group', group.name)
-        this.content = this.content.replaceAll('{icon}', this.icons[Math.floor(Math.random() * this.icons.length)])
-
-        const today = new Date()
-        const time = today.getHours() + ':' + today.getMinutes() + ':' + today.getSeconds()
-        this.content = this.content.replaceAll('{time}', time)
-
-        const spins = this.content.match(/\{((()[^\}])*)\}/gm)
-        if (spins) {
-          for (let i = 0; i < spins.length; i++) {
-            const spin = spins[i]
-            const spinSplit = spin.replaceAll('{', '').replaceAll('}', '').split('|')
-            const spinGet = spinSplit[Math.floor(Math.random() * spinSplit.length)]
-            this.content = this.content.replaceAll(spin, spinGet)
-          }
-        }
-      },
-
-      continuePost () {
-        this.statusPost = 'processing'
-        this.loading1 = true
-      },
-
-      async startPost () {
-        if (this.groups.length == 0) {
-          alert(this.$t('pls_choice_post'))
-          return
-        }
-        if (this.maxTime < this.minTime && this.choiceTime === 'range') {
-          alert(this.$t('pls_time'))
-          return
-        }
-
-        this.statusPost = 'processing'
-        this.loading1 = true
-        this.dialog = true
-        this.groupsProcessing = []
-        this.numGroupPost = 0
-        this.groupsDone = []
-        this.groupsError = []
-        this.groupsStart = this.groups
-        this.logger = ''
-        for (let i = 0; i < this.groupsStart.length; i++) {
-          if (this.statusPost == 'stop' || this.statusPost == 'done') {
-            break
-          }
-          if (this.statusPost == 'wait') {
-            i--
-            await new Promise(r => setTimeout(r, 1000))
-            continue
-          }
-
-          this.numGroupPost++
-          const group = this.groupsStart[i]
-          this.groupsProcessing.push({
-            id: group.id,
-            name: group.name,
-            percent: 50,
-            color: 'blue'
-          })
-
-          this.combineContent(group)
-          this.postGroup(group)
-          const time = this.choiceTime === 'range' ? getRndInteger(this.minTime, this.maxTime) : this.timeDelay
-          await new Promise(r => setTimeout(r, time * 1000))
-        }
-        await new Promise(r => setTimeout(r, 2000))
-        this.statusPost = 'done'
-      },
-
-      stopPost () {
-        this.statusPost = 'wait'
-        this.loading1 = false
-      },
-
-      cancelPost () {
-        this.statusPost = 'stop'
-        this.loading1 = true
-      },
-
-      async postGroup (group) {
-        let attachmentArray = this.attachment
-        if (this.regime === 'regime_text') {
-          attachmentArray = ['text']
-        } else if (this.regime === 'regime_text_file') {
-          attachmentArray = ['text'].concat(this.attachment.filter(item => ['files', 'images'].includes(item)))
-        } else if (this.regime === 'regime_text_link') {
-          attachmentArray = ['text'].concat(this.attachment.filter(item => ['link', 'stream'].includes(item)))
-        } else if (this.regime === 'regime_text_link_file') {
-          attachmentArray = ['text'].concat(this.attachment)
-        }
-
-
-        const attachment = attachmentArray[Math.floor(Math.random() * attachmentArray.length)]
-        let attachmentData = null
-        if (attachment === 'images') {
-          const dt = this.attachmentData['images']
-          attachmentData = this.randomImage ? [dt[Math.floor(Math.random() * dt.length)]] : dt
-        }
-
-        if (attachment === 'files') {
-          const dt = this.attachmentData['files']
-          attachmentData = this.randomFile ? dt[Math.floor(Math.random() * dt.length)] : dt[0]
-        }
-
-        if (attachment === 'link') {
-          const dt = this.attachmentData['link']
-          attachmentData = this.randomLink ? dt[Math.floor(Math.random() * dt.length)] : dt[0]
-        }
-
-        if (attachment === 'stream') {
-          const dt = this.attachmentData['stream']
-          attachmentData = this.randomStream ? dt[Math.floor(Math.random() * dt.length)] : dt[0]
-        }
-
-        if (attachment === 'text') {
-          attachmentData = null
-        }
-        console.log(attachment, attachmentData)
-
-        this.$store.dispatch('postGroup', {
+      if (attachment === "text") {
+        attachmentData = null;
+      }
+      this.$store
+        .dispatch("comment", {
+          postId: postId,
+          comment: comment,
+          tagList: this.$store.state.tagList,
           attachment: attachment,
-          attachmentData: attachmentData,
-          content: this.content,
-          group: group,
-        }).then(async (result) => {
-          for (let i = 0; i < this.groupsProcessing.length; i++) {
-            const groupProcess = this.groupsProcessing[i]
-            if (groupProcess.id == group.id) {
-              if (result.error) {
-                this.groupsProcessing[i].percent = 100
-                this.groupsProcessing[i].color = 'red'
-                this.logger += '<p style="color: #ff312a">' + this.$t('error_post') + ' <a style="color: #1e55e3" href="https://www.facebook.com/groups/' + group.id + '" target="_blank">' + group.name + '</a></p>'
-                this.groupsError.push(group)
-              } else {
-                this.groupsProcessing[i].percent = 100
-                this.groupsProcessing[i].color = 'green'
-                this.logger += '<p style="color: #008037">' + this.$t('success_post') + ' <a style="color: #1e55e3" href="https://www.facebook.com/groups/' + group.id + '" target="_blank">' + group.name + '</a>,' +
-                  ' ' + this.$t('view') + '  <a style="color: #1e55e3" href="' + result.url + '" target="_blank">' + this.$t('post') + '</a></p>'
-                this.groupsDone.push(group)
-              }
-              await new Promise(r => setTimeout(r, 200))
-              this.groupsProcessing = this.groupsProcessing.filter((cus, index) => cus.id != group.id)
-              break
-            }
-          }
+          attachmentData: attachment === "images" ? [attachmentData[0]] : null,
         })
-      },
-
+        .then(async (result) => {
+          if (this.sendding > 0) {
+            this.sendding -= 1;
+          }
+          if (result.isError) {
+            this.error++;
+            this.logger +=
+              '<p style="color: #ff312a">' +
+              this.$t("error_post") +
+              ' <a style="color: #1e55e3" href="https://www.facebook.com/groups/' +
+              group.id +
+              '" target="_blank">' +
+              group.name +
+              "</a>: " +
+              result.description +
+              "</p>";
+          } else {
+            this.success++;
+            this.logger +=
+              '<p style="color: #008037">' +
+              this.$t("success_post") +
+              ' <a style="color: #1e55e3" href="https://www.facebook.com/groups/' +
+              group.id +
+              '" target="_blank">' +
+              group.name +
+              "</a>," +
+              " " +
+              this.$t("view") +
+              '  <a style="color: #1e55e3" href="' +
+              result.comment_link +
+              '" target="_blank">' +
+              this.$t("post") +
+              "</a></p>";
+          }
+          this.progressBar =
+            (1 - parseFloat(this.sendding) / parseFloat(this.numSend)) * 100;
+          if (this.progressBar == 100) {
+            this.currentGroup = `<p style="color:#2bb734"> ${this.$t(
+              "complete_comment"
+            )}</p>`;
+            this.isProgressing = false;
+          }
+        });
     },
-  }
+  },
+};
 </script>
 <style lang="css">
-    .v-dialog {
-        position: absolute;
-        top: 0;
-    }
+.progress-table-header tr th {
+  font-size: 1rem !important;
+  font-weight: bold !important;
+  padding: 15px;
+  width: 150px;
+}
+.progress-table-body tr td {
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 15px;
+  text-align: center;
+}
 
-    .v-chip__content {
-        font-size: 14px;
-    }
+.v-dialog {
+  position: absolute;
+  top: 0;
+}
 
-    .custom-loader {
-        animation: loader 1s infinite;
-        display: flex;
-    }
+.v-chip__content {
+  font-size: 14px;
+}
 
-    @-moz-keyframes loader {
-        from {
-            transform: rotate(0);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
+.custom-loader {
+  animation: loader 1s infinite;
+  display: flex;
+}
 
-    @-webkit-keyframes loader {
-        from {
-            transform: rotate(0);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
+@-moz-keyframes loader {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-    @-o-keyframes loader {
-        from {
-            transform: rotate(0);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
+@-webkit-keyframes loader {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-    @keyframes loader {
-        from {
-            transform: rotate(0);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
+@-o-keyframes loader {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loader {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>
 
 

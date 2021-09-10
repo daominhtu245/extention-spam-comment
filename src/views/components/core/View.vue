@@ -1,7 +1,6 @@
 <template>
   <v-main class="blue lighten-5">
     <router-view />
-    <dashboard-core-footer />
     <v-btn
       v-scroll="onScroll"
       v-show="fab"
@@ -15,33 +14,33 @@
     >
       <v-icon size="x-large">mdi-chevron-up</v-icon>
     </v-btn>
-
+    <dashboard-core-footer />
   </v-main>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState } from "vuex";
 
 export default {
-  name: 'DashboardCoreView',
+  name: "DashboardCoreView",
   data: () => ({
-    fab: false
+    fab: false,
   }),
   computed: {
-    ...mapState(['fb_login']),
+    ...mapState(["fb_login"]),
   },
   components: {
-    DashboardCoreFooter: () => import('./Footer'),
+    DashboardCoreFooter: () => import("./Footer"),
   },
   methods: {
-    onScroll (e) {
-      if (typeof window === 'undefined') return
-      const top = window.pageYOffset || e.target.scrollTop || 0
-      this.fab = top > 20
+    onScroll(e) {
+      if (typeof window === "undefined") return;
+      const top = window.pageYOffset || e.target.scrollTop || 0;
+      this.fab = top > 20;
     },
-    toTop () {
-      this.$vuetify.goTo(0)
-    }
-  }
-}
+    toTop() {
+      this.$vuetify.goTo(0);
+    },
+  },
+};
 </script>

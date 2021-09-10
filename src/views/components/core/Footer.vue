@@ -1,8 +1,9 @@
 <template>
   <v-footer
     id="dashboard-core-footer"
+    style="margin:0px!important;padding:0px!important"
   >
-    <v-container>
+    <v-container :fluid=true style="padding:0px!important">
       <v-row
         align="center"
         no-gutters
@@ -10,7 +11,7 @@
         <v-col
           v-for="(link, i) in links"
           :key="i"
-          class="text-center mb-sm-0 mb-5"
+          class="text-center"
           cols="auto"
         >
           <a
@@ -33,11 +34,11 @@
         </v-bottom-navigation>
       </v-row>
       <v-col
-              cols="12"
+              cols="12" 
               md="auto"
+              style="background-color:#ffdbdb"
       >
-
-        <div class="body-1 font-weight-light pt-6 pt-md-0 text-center">
+        <div class="body-1 font-weight-light pt-6 pt-md-0 text-center" >
           &copy; {{ (new Date()).getFullYear() }} by <a href="http://amaiteam.com">Amaiteam</a>
         </div>
       </v-col>

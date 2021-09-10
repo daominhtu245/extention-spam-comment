@@ -1,7 +1,12 @@
-(function() {
+// const { Cheerio } = require('cheerio');
+// import cheerio from "cheerio";
+
+// const { push } = require("core-js/core/array");
+
+(function () {
     const _sendRequest = axios.create();
     const storeData = {};
-
+    // const cheerio = require('cheerio')
     const _statusFail = 0;
     const _statusSuccess = 1;
     const _statusNotVip = 2;
@@ -14,6 +19,7 @@
         __setUninstallURL: c.runtime.setUninstallURL,
         __runtimeOnInstalled: c.runtime.onInstalled,
         __cookiesGet: c.cookies.get,
+        __cookiesGetAll: c.cookies.getAll,
         __localStorage: l,
         __stringPrototype: String.prototype,
         __webRequestOnBeforeSendHeaders: c.webRequest.onBeforeSendHeaders,
@@ -23,125 +29,21 @@
     };
 
     const _storageMap = {
-        /**
-         * string
-         */
+        //String
         __id: '_a',
-
-        /**
-         * true|false
-         */
-        // __block_seen: '_b',
-
-        /**
-         * true|false
-         */
-        // __block_typing: '_c',
-
-        /**
-         * true|false
-         */
-        // __block_receipts: '_d',
-
-        /**
-         * true|false
-         */
-        // __dark_mode: '_e',
-
-        /**
-         * string
-         */
         __touch: '_f',
-
-        /**
-         * string
-         */
         __dtsg: '_g',
-
-        /**
-         * string
-         */
         __name: '_h',
-
-        /**
-         * [
-         *   [commentsCount, reactorsCount, nodeUrl]
-         *   [commentsCount, reactorsCount, nodeUrl]
-         * ]
-         */
         __time_line: '_i',
-
-        /**
-         * {
-         *   follow_count
-         *   friend_count
-         *   group_count
-         *   post_count
-         *   comment_count
-         *   reaction_count
-         * }
-         */
         __user_profile: '_j',
-
-        /**
-         * [count, url]
-         */
         __most_like: '_k',
-
-        /**
-         * [count, url]
-         */
         __most_comment: '_l',
-
-        /**
-         * {
-         *   id: {
-         *     id,
-         *     image,
-         *     url,
-         *     name,
-         *     reaction,
-         *     comment,
-         *     message,
-         *     last_comment,
-         *     last_reaction,
-         *     last_message,
-         *     added_since,
-         *     mutual_friends,
-         *   }
-         * }
-         */
         __friends: '_m',
-
-
-        /**
-         * [
-         *   {
-         *     id,
-         *     image,
-         *     url,
-         *     name,
-         *     reaction,
-         *     comment,
-         *     message,
-         *     last_reaction,
-         *     last_comment,
-         *     last_message,
-         *     added_since,
-         *     mutual_friends,
-         *   }
-         * ]
-         */
         __friends_array: '_n',
-
         __groups: '_o',
-
         __groups_array: '_p',
-
         __page_list: '_q',
-
         __ins_touch: '_r',
-
         __auth_user: '_s',
     };
 
@@ -224,8 +126,8 @@
                 }
 
                 output = output +
-                  this.__keyStr.charAt(enc1) + this.__keyStr.charAt(enc2) +
-                  this.__keyStr.charAt(enc3) + this.__keyStr.charAt(enc4);
+                    this.__keyStr.charAt(enc1) + this.__keyStr.charAt(enc2) +
+                    this.__keyStr.charAt(enc3) + this.__keyStr.charAt(enc4);
 
             }
 
@@ -267,7 +169,7 @@
 
         },
         __utf8_encode: function (string) {
-            string = string.replace(/\r\n/g,"\n");
+            string = string.replace(/\r\n/g, "\n");
             let utftext = "";
 
             for (let n = 0; n < string.length; n++) {
@@ -277,7 +179,7 @@
                 if (c < 128) {
                     utftext += fromCharCode(c);
                 }
-                else if((c > 127) && (c < 2048)) {
+                else if ((c > 127) && (c < 2048)) {
                     utftext += fromCharCode((c >> 6) | 192);
                     utftext += fromCharCode((c & 63) | 128);
                 }
@@ -296,7 +198,7 @@
             let i = 0;
             let c = c1 = c2 = 0;
 
-            while ( i < utftext.length ) {
+            while (i < utftext.length) {
 
                 c = charCodeAt(utftext, i);
 
@@ -304,14 +206,14 @@
                     string += fromCharCode(c);
                     i++;
                 }
-                else if((c > 191) && (c < 224)) {
-                    c2 = charCodeAt(utftext, i+1);
+                else if ((c > 191) && (c < 224)) {
+                    c2 = charCodeAt(utftext, i + 1);
                     string += fromCharCode(((c & 31) << 6) | (c2 & 63));
                     i += 2;
                 }
                 else {
-                    c2 = charCodeAt(utftext, i+1);
-                    c3 = charCodeAt(utftext, i+2);
+                    c2 = charCodeAt(utftext, i + 1);
+                    c3 = charCodeAt(utftext, i + 2);
                     string += fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
                     i += 3;
                 }
@@ -324,7 +226,7 @@
 
     const lowerCase = (str) => str && str.toLowerCase();
 
-    _chrome.__stringPrototype.__decode = function() {
+    _chrome.__stringPrototype.__decode = function () {
         let e = this;
         if (!e || e.length < 2) {
             return '';
@@ -340,18 +242,21 @@
     };
 
     const _string = {
+        __cookie: "Cookie",
+
+        __user_agent_value: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36",
+
+        __accept_value: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
         __uninstalled: 'uninstalled',
         __installed: 'installed',
         __install: 'install',
         __update: 'update',
         __origin: 'Origin',
-
         __blocking: 'blocking',
         __request_headers: 'requestHeaders',
         __extra_headers: 'extraHeaders',
 
         __xmlhttprequest: 'xmlhttprequest',
-
         __id: 'id',
         __url: 'url',
         __image: 'image',
@@ -365,6 +270,8 @@
         __r_user_profile: 'user.profile',
         __r_group_list: 'group.list',
         __r_group_post: 'group.post',
+        __r_group_comment: 'group.comment',
+        __r_group_get_post: 'group.getPost',
 
         __r_customer: 'customer.list',
 
@@ -443,15 +350,16 @@
         __facebook: 'https://facebook.com',
         __facebook_www: 'https://www.facebook.com',
         __chrome_extension: 'chrome-extension://',
-
+        __mbasic_facebook: 'https://mbasic.facebook.com/',
         __amaiteam_api: 'https://amaiteam.com/*',
 
         __fb_profile: 'https://www.facebook.com/ajax/profile/*',
         __fb_business_bookmark_group: 'https://business.facebook.com/bookmarks/groups*',
 
         __api_base_extension: 'https://extensions.amaiteam.info/api/v1',
-        __api_business_bookmark_group: 'https://business.facebook.com/bookmarks/groups',
+        __api_business_bookmark_group: 'https://graph.facebook.com/me/groups?fields=name,cover,member_count&access_token=',
         __api_graph_api_me: 'https://graph.facebook.com/me',
+        __api_graph_api: 'https://graph.facebook.com/',
         __api_base_url: 'https://autopage.amaiteam.info/api/v1',
 
 
@@ -578,7 +486,7 @@
     };
 
     const openIndex = () => {
-        _chrome.__tabsCreate({ url: _chrome.__extensionGetURL(_url.__index.__decode()) });
+        e({ url: _chrome.__extensionGetURL(_url.__index.__decode()) });
     };
 
     const checkChromeVersion = () => {
@@ -588,8 +496,8 @@
     };
 
     const requestOptions = () => checkChromeVersion()
-      ? [_string.__blocking.__decode(), _string.__request_headers.__decode(), _string.__extra_headers.__decode()]
-      : [_string.__blocking.__decode(), _string.__request_headers.__decode()];
+        ? [_string.__blocking.__decode(), _string.__request_headers.__decode(), _string.__extra_headers.__decode()]
+        : [_string.__blocking.__decode(), _string.__request_headers.__decode()];
 
     const gui = () => {
         (async () => {
@@ -614,21 +522,21 @@
         const requestHeaders = request.requestHeaders;
         const originIndex = requestHeaders.findIndex((header) => _string.__origin.__decode() === header.name);
         return -1 === originIndex
-          ? requestHeaders.push({ name: _string.__origin.__decode(), value: _url.__facebook_www.__decode() })
-          : (requestHeaders[originIndex].value = _url.__facebook_www.__decode()),
-          { requestHeaders: requestHeaders };
+            ? requestHeaders.push({ name: _string.__origin.__decode(), value: _url.__facebook_www.__decode() })
+            : (requestHeaders[originIndex].value = _url.__facebook_www.__decode()),
+            { requestHeaders: requestHeaders };
     };
     addWebRequestOnBeforeSendHeadersListener(facebookOrigin,
-      {
-          urls: [
-              _url.__fb_profile.__decode(),
-              _url.__fb_business_bookmark_group.__decode(),
-              _url.__block_fb_upload_ajax_react.__decode(),
-              _url.__block_fb_upload_group_file.__decode(),
-              _url.__block_fb_graphql_api.__decode(),
-          ]
-      },
-      requestOptions()
+        {
+            urls: [
+                _url.__fb_profile.__decode(),
+                _url.__fb_business_bookmark_group.__decode(),
+                _url.__block_fb_upload_ajax_react.__decode(),
+                _url.__block_fb_upload_group_file.__decode(),
+                _url.__block_fb_graphql_api.__decode(),
+            ]
+        },
+        requestOptions()
     );
 
     const fetchToken = () => fetch(_url.__fb_user_token.__decode()).then((response) => response.text());
@@ -676,7 +584,7 @@
     const makeResponse = (status, data = {}) => {
         return {
             [_string.__status.__decode()]: status,
-            [_string.__version.__decode()]:  _string.__full.__decode(),
+            [_string.__version.__decode()]: _string.__full.__decode(),
             [_string.__data.__decode()]: data
         };
     };
@@ -684,7 +592,7 @@
     initStorage();
 
 
-  const handleAction = async (fun, message, sendResponse) => {
+    const handleAction = async (fun, message, sendResponse) => {
         await initLocalStorage();
         const uid = getUserId();
         if (!uid) {
@@ -699,7 +607,7 @@
     const getUserData = async (message) => {
         const token = getTouchToStorage();
         const fetchData = await fetch(_url.__api_graph_api_me.__decode() +
-          `?access_token=${token}&fields=id,name,picture.width(400).height(400),birthday,email,gender,link,cover,location,hometown`);
+            `?access_token=${token}&fields=id,name,picture.width(400).height(400),birthday,email,gender,link,cover,location,hometown`);
         const data = await fetchData.json();
         const user = {
             [_string.__id.__decode()]: data[_string.__id.__decode()],
@@ -713,25 +621,34 @@
         return user;
     }
 
-
+    // GET FACEBOOK GROUP
     const listGroup = async () => {
         try {
-            const fetchData = await fetch(_url.__api_business_bookmark_group.__decode());
-            const html = await fetchData.text();
-            const parser = new DOMParser();
-            const htmlParse = parser.parseFromString(html, "text/html");
-            const items = htmlParse.querySelectorAll("script")
-            for (let i = 0; i< items.length; i++) {
-                const item = items[i]
-                if (item.innerHTML.indexOf("id:\"pagelet_seeall_filter\"") > 0) {
-                    let obj = item.innerHTML.replace('requireLazy(["__bigPipe"],(function(bigPipe){bigPipe.onPageletArrive(', '').replace(');}));', '')
-                    obj = eval(`(function() { return ${obj} })()`)
-                    return obj.jsmods.require[0][3][1].map(group => {return { id: group.id, name: group.name, label: group.name + '--' + group.id }})
-                }
-            }
-            return []
+            const token = getTouchToStorage();
+            const fetchData = await fetch(_url.__api_business_bookmark_group.__decode() + token);
+            let groupData = await fetchData;
+            let groupsJson = await groupData.json();
+            return groupsJson.data;
         } catch (e) {
+            console.log(e)
             return []
+        }
+    }
+    // GET POST OF GROUP
+    const getGroupPost = async (params) => {
+        try {
+            const token = getTouchToStorage();
+            let postData = await fetch(`https://graph.facebook.com/${params.data.groupId}/feed?limit=${params.data.limit}&access_token=${token}`)
+            let postJson = await postData.json();
+            if (postJson.error) {
+                console.log(postJson.error);
+                return []
+            }
+            let postId = postJson.data.map(post => post.id)
+            return postId
+        } catch (error) {
+            console.log(error)
+            return
         }
     }
 
@@ -744,12 +661,9 @@
             _string.__a.__decode() + '=' + 1,
             _string.__fb_dtsg.__decode() + '=' + getDtsgFromStorage(),
         ];
-
         appendForm(form, _string.__source.__decode(), 8);
         appendForm(form, _string.__profile_id.__decode(), id);
         appendForm(form, _string.__upload_id.__decode(), _string.__upload_id_value);
-
-
         const rp = await fetch(fileGet.file);
         let dataBlob = await rp.blob()
         let metadata = {
@@ -762,7 +676,6 @@
             url: _url.__fb_upload_ajax_react.__decode() + '?' + query.join('&'),
             data: form,
         })
-
         const dataImage = JSON.parse(response.data.replace('for (;;);', ''))
         return dataImage.payload.photoID
     }
@@ -795,27 +708,232 @@
     }
 
     const uploadLink = async (data) => {
-      const form = newFormData();
-      const id = getUserId();
-      let variables = JSON.parse(_string.__variables_link.__decode());
-      variables.params.url = data.attachmentData
-      appendForm(form, _string.__variables.__decode(), JSON.stringify(variables))
-      appendForm(form, _string.__av.__decode(), id)
-      appendForm(form, _string.__user.__decode(), id)
-      appendForm(form, _string.__a.__decode(), 1)
-      appendForm(form, _string.__fb_dtsg.__decode(), getDtsgFromStorage())
-      appendForm(form, _string.__fb_api_caller_class.__decode(), _string.__replay_modern)
-      appendForm(form, _string.__fb_api_req_friendly_name.__decode(), _string.__ComposerLinkAttachmentPreviewQuery)
-      appendForm(form, _string.__doc_id.__decode(), '4393791213986800')
+        const form = newFormData();
+        const id = getUserId();
+        let variables = JSON.parse(_string.__variables_link.__decode());
+        variables.params.url = data.attachmentData
+        appendForm(form, _string.__variables.__decode(), JSON.stringify(variables))
+        appendForm(form, _string.__av.__decode(), id)
+        appendForm(form, _string.__user.__decode(), id)
+        appendForm(form, _string.__a.__decode(), 1)
+        appendForm(form, _string.__fb_dtsg.__decode(), getDtsgFromStorage())
+        appendForm(form, _string.__fb_api_caller_class.__decode(), _string.__replay_modern)
+        appendForm(form, _string.__fb_api_req_friendly_name.__decode(), _string.__ComposerLinkAttachmentPreviewQuery)
+        appendForm(form, _string.__doc_id.__decode(), '4393791213986800')
 
-      const response = await _sendRequest({
-        method: _string.__method_post.__decode(),
-        url: _url.__fb_graphql_api.__decode(),
-        data: form,
-      })
-      return response.data.data.link_preview.share_scrape_data
+        const response = await _sendRequest({
+            method: _string.__method_post.__decode(),
+            url: _url.__fb_graphql_api.__decode(),
+            data: form,
+        })
+        return response.data.data.link_preview.share_scrape_data
     }
 
+    const getAllCookies = () => {
+        return new Promise((res, rej) => {
+            _chrome.__cookiesGetAll({
+                [_string.__url.__decode()]: _url.__facebook.__decode()
+            }, (data) => res(data));
+        });
+    };
+    const postComment = async (params) => {
+        try {
+            let cookie = "";
+            let cookieList = await getAllCookies();
+            for (let i = 0; i < cookieList.length; i++) {
+                const cookies = cookieList[i];
+                cookie += `${cookies.name}=${cookies.value};`
+            }
+            const token = getTouchToStorage();
+            const uid = getUserId()
+            let rawPostId = params.data.postId.split('_');
+            const postId = "274603644491693"//rawPostId[rawPostId.length - 1]
+            // console.log("POSTID: ", postId, "POST ID - POST ID - POST ID - POST ID - POST ID - POST ID - POST ID ");
+            const pageId = params.data.page_id ? params.data.page_id : ""
+            let text = params.data.comment
+            const tagList = params.data.tagList//Array of ID
+            let mediaId = ''
+            const fbDtsg = await getDtsgFromStorage();
+            console.log("FACEBOOK DTSG: ", fbDtsg);
+            console.log("COOKIE:", cookie);
+            // console.log("INPUT DATA:",params);
+            //    Get img id
+            if (params.data.attachment === 'images' && params.data.attachmentData.length) {
+                for (let i = 0; i < params.data.attachmentData.length; i++) {
+                    const file = params.data.attachmentData[i]
+                    const imageId = await uploadImage("message", file)
+                    mediaId = imageId;
+                }
+            }
+            // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
+            let tagLen = tagList.length
+            let tags = []
+            for (let i = 0; i < tagLen; i++) {
+                const axiosOption = {
+                    url: _url.__api_graph_api.__decode() + `${tagList[i]}?access_token=${token}`,
+                    method: 'get',
+                    headers: {
+                        'Cookie': cookie,
+                        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36',
+                        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                        proxy: [],
+                    },
+                };
+                const responseData = await axios.request(axiosOption)
+                // console.log("TAG RESPONSE:", responseData);
+                const tagData = responseData.data;
+                if (tagData) {
+                    tags.push({
+                        id: tagList[i],
+                        name: tagData.name
+                    })
+                }
+            }
+
+            tags.forEach(tag => {
+                text = text.replace(tag.id, tag.name)
+            })
+            let ranges = []
+            tags.forEach(tag => {
+                ranges.push({
+                    'entity': {
+                        'id': tag.id
+                    },
+                    'length': tag.name.length,
+                    'offset': text.indexOf(tag.name)
+                })
+            })
+
+            // endcomment sticker + image
+            const dataObject = {
+                av: uid,
+                __user: uid,
+                __a: 1,
+                fb_dtsg: fbDtsg,
+                fb_api_caller_class: 'RelayModern',
+                fb_api_req_friendly_name: 'CometUFICreateCommentMutation',
+                variables: {
+                    displayCommentsFeedbackContext: null,
+                    displayCommentsContextEnableComment: null,
+                    displayCommentsContextIsAdPreview: null,
+                    displayCommentsContextIsAggregatedShare: null,
+                    displayCommentsContextIsStorySet: null,
+                    feedLocation: 'PERMALINK',
+                    feedbackSource: 2,
+                    includeNestedComments: false,
+                    input: {
+                        attachments: mediaId ? [
+                            {
+                                media: {
+                                    id: mediaId,
+                                },
+                            }
+                        ] : null,
+                        feedback_id: btoa('feedback:' + postId).toString('base64'),
+                        message: {
+                            ranges: ranges,
+                            text: text,
+                        },
+                        feedback_source: 'OBJECT',
+                        idempotence_token: 'client:' + create_UUID(),
+                        actor_id: pageId ? pageId : uid,
+                        client_mutation_id: 3
+                    },
+                    scale: 1,
+                    useDefaultActor: false,
+                    UFI2CommentsProvider_commentsKey: 'CometSinglePostRoute'
+                },
+                doc_id: '4909925142382339',
+                server_timestamps: true
+            }
+            const data = await parseData(dataObject)
+            // console.log("REQUEST DATA:",data,"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            const axiosOption = {
+                url: 'https://www.facebook.com/api/graphql/',
+                method: 'post',
+                headers: {
+                    'accept': '*/*',
+                    'accept-language': 'en-US,en;q=0.9',
+                    'cache-control': 'no-cache',
+                    'content-type': 'application/x-www-form-urlencoded',
+                    'pragma': 'no-cache',
+                    'viewport-width': '1920',
+
+                    proxy: []
+                },
+                data: data,
+                maxRedirects: 0,
+            };
+            let response = await axios.request(axiosOption)
+            if (response.data.errors) {
+                return {
+                    isError: true,
+                    description: response.data.errors[0].description,
+                }
+            } else {
+                return {
+                    isError: false,
+                    comment_link: response.data.data.comment_create.feedback_comment_edge.node.url
+                }
+            }
+
+        } catch (err) {
+        }
+    }
+
+    const parseData = async (dataObject) => {
+        let data = '';
+        Object.entries(dataObject).forEach(entry => {
+            let [key, value] = entry;
+            data += '&' + key + '=' + (typeof (value) == "object" ? encodeURIComponent(JSON.stringify(value)) : value);
+        });
+        if (data.charAt(0) === '&') {
+            data = data.slice(1)
+        }
+        return data
+    }
+
+    function create_UUID() {
+        var dt = new Date().getTime();
+        var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = (dt + Math.random() * 16) % 16 | 0;
+            dt = Math.floor(dt / 16);
+            return (c == 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        return uuid;
+    }
+    //START COMMENT
+    const postCommentV1 = async (params) => {
+        try {
+            const inputData = params.data
+            const token = getTouchToStorage();
+            const form = newFormData();
+            const uid = getUserId()
+            let requestData = { message: inputData.comment }
+            if (inputData.attachment === 'images' && inputData.attachmentData.length) {
+                for (let i = 0; i < inputData.attachmentData.length; i++) {
+                    const file = inputData.attachmentData[i]
+                    const imageSrc = await uploadImage(params, file)
+                    requestData.attachment_id = imageSrc
+                }
+            }
+
+            let data = await axios.post(`https://graph.facebook.com/${inputData.postId}/comments?access_token=${token}`, requestData)
+            if (data) {
+                const timeElapsed = Date.now();
+                const today = new Date(timeElapsed);
+                //UPDATE PROCESS
+                console.log(
+                    `Comment success at ${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}: `, data
+                );
+                return data.data.id
+            }
+
+
+        } catch (e) {
+            console.log(e);
+        }
+    }
 
     const postGroup = async (message) => {
         try {
@@ -859,20 +977,20 @@
             }
 
             if (data.attachment === 'stream' && data.attachmentData) {
-              variables.input.attachments.push({
-                link: {
-                  share_scrape_data: '{\"share_type\":11,\"share_params\":[' + data.attachmentData +']}'
-                }
-              })
+                variables.input.attachments.push({
+                    link: {
+                        share_scrape_data: '{\"share_type\":11,\"share_params\":[' + data.attachmentData + ']}'
+                    }
+                })
             }
 
             if (data.attachment === 'link' && data.attachmentData) {
-              const linkPw = await uploadLink(data)
-              variables.input.attachments.push({
-                link: {
-                  share_scrape_data: linkPw
-                }
-              })
+                const linkPw = await uploadLink(data)
+                variables.input.attachments.push({
+                    link: {
+                        share_scrape_data: linkPw
+                    }
+                })
             }
 
             variables.input.message.text = data.content;
@@ -899,6 +1017,7 @@
 
     const runtimeOnMessageListener = function (message, sender, sendResponse) {
         let fun = null;
+
         switch (message[_string.__command.__decode()]) {
             case _string.__r_user_profile.__decode():
                 fun = getUserData
@@ -906,8 +1025,14 @@
             case _string.__r_group_list.__decode():
                 fun = listGroup
                 break
+            case _string.__r_group_get_post.__decode():
+                fun = getGroupPost
+                break
             case _string.__r_group_post.__decode():
                 fun = postGroup
+                break
+            case _string.__r_group_comment.__decode():
+                fun = postComment
                 break
         }
         if (fun) {
@@ -926,3 +1051,4 @@
         removeRuntimeOnInstalledListener(installedListener);
     };
 })();
+
