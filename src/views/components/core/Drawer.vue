@@ -66,14 +66,14 @@ export default {
   data: () => ({
     items: [
       {
-        title: "Đăng bài tự động",
+        title: "Tự động Spam comment",
         icon: "mdi-account-search",
         to: "/inbox",
       },
     ],
     profile: {
       avatar: true,
-      title: "Đăng bài tự động",
+      title: "Tự động Spam comment",
     },
     banner: [],
     contact: [],

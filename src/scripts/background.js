@@ -268,6 +268,7 @@
         __c_user: 'c_user',
 
         __r_user_profile: 'user.profile',
+        __r_user_account: 'user.account',
         __r_group_list: 'group.list',
         __r_group_post: 'group.post',
         __r_group_comment: 'group.comment',
@@ -344,10 +345,10 @@
         __object: 'OBJECT',
         __page: 'page',
         __token: 'token',
-        __accept_language:'en-US,en;q=0.9',
-        __no_cache:'no-cache',
-        __content_type:'application/x-www-form-urlencoded',
-        __view_port:'1920',
+        __accept_language: 'en-US,en;q=0.9',
+        __no_cache: 'no-cache',
+        __content_type: 'application/x-www-form-urlencoded',
+        __view_port: '1920',
     };
 
     const _url = {
@@ -363,8 +364,9 @@
         __fb_business_bookmark_group: 'https://business.facebook.com/bookmarks/groups*',
 
         __api_base_extension: 'https://extensions.amaiteam.info/api/v1',
-        __api_business_bookmark_group: 'https://graph.facebook.com/me/groups?fields=name,cover,member_count&access_token=',
+        __api_business_bookmark_group: 'https://graph.facebook.com/me/groups?fields=name,cover,member_count,privacy&access_token=',
         __api_graph_api_me: 'https://graph.facebook.com/me',
+        __api_graph_api_me_account: 'https://graph.facebook.com/me/accounts?fields=name,id&limit=100',
         __api_graph_api: 'https://graph.facebook.com/',
         __api_base_url: 'https://autopage.amaiteam.info/api/v1',
 
@@ -640,6 +642,26 @@
             return []
         }
     }
+    // GET USER's ACCOUNT
+    const getUserAccount = async (params) => {
+        console.log("Trigger get user account be");
+        try {
+            const token = getTouchToStorage();
+            console.log("My token:", token);
+            let accountData = await fetch(_url.__api_graph_api_me_account.__decode() + "&access_token=" + token)
+            let accountJson = await accountData.json();
+            if (accountJson.error) {
+                console.log(accountJson.error);
+                return []
+            }
+            let listAccount = accountJson.data.map(account => { return { "id": account.id, "name": account.name } })
+            return listAccount
+        } catch (error) {
+            console.log(error)
+            return
+        }
+    }
+
     // GET POST OF GROUP
     const getGroupPost = async (params) => {
         try {
@@ -743,7 +765,7 @@
         });
     };
     const postComment = async (params) => {
-        console.log("Trigger: ",params);
+        console.log("Trigger: ", params);
         try {
             let cookie = "";
             let cookieList = await getAllCookies();
@@ -755,7 +777,7 @@
             const uid = getUserId()
             let rawPostId = params.data.postId.split('_');
             const postId = rawPostId[rawPostId.length - 1]
-            const pageId = params.data.page_id ? params.data.page_id : ""
+            const pageId = params.data.pageId;
             let text = params.data.comment
             const tagList = params.data.tagList//Array of ID
             let mediaId = ''
@@ -768,6 +790,7 @@
                     mediaId = imageId;
                 }
             }
+
             // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
             let tagLen = tagList.length
             let tags = []
@@ -791,7 +814,6 @@
                     })
                 }
             }
-
             tags.forEach(tag => {
                 text = text.replace(tag.id, tag.name)
             })
@@ -805,10 +827,9 @@
                     'offset': text.indexOf(tag.name)
                 })
             })
-
             // endcomment sticker + image
             const dataObject = {
-                av: uid,
+                av: pageId != null ? pageId : uid,
                 __user: uid,
                 __a: 1,
                 fb_dtsg: fbDtsg,
@@ -849,9 +870,9 @@
                 server_timestamps: true
             }
             const data = await parseData(dataObject)
-            let axiosOption ={}
+            let axiosOption = {}
             try {
-                 axiosOption = {
+                axiosOption = {
                     url: _url.__fb_graphql_api.__decode(),
                     method: _string.__method_post.__decode(),
                     headers: {
@@ -867,17 +888,27 @@
                     maxRedirects: 0,
                 };
             } catch (error) {
-                console.log("Setup Axios fail",error);
+                // console.log("Setup Axios fail", error);
             }
-            console.log("Setup Axios success",axiosOption);
+            // console.log("Setup Axios success", axiosOption);
             let response = await axios.request(axiosOption)
-            console.log("Response: ",response);
+            console.log("Response: ", response);
             if (response.data.errors) {
+                let description = response.data.errors[0].description.__html ?
+                    response.data.errors[0].description.__html :
+                    response.data.errors[0].description
+
                 return {
                     isError: true,
-                    description: response.data.errors[0].description,
+                    description: description,
                 }
             } else {
+                if (response.data.data.comment_create.feedback_comment_edge.node.url === undefined) {
+                    return {
+                        isError: true,
+                        description: "Comment success but can't get comment link",
+                    }
+                }
                 return {
                     isError: false,
                     comment_link: response.data.data.comment_create.feedback_comment_edge.node.url
@@ -996,6 +1027,9 @@
         switch (message[_string.__command.__decode()]) {
             case _string.__r_user_profile.__decode():
                 fun = getUserData
+                break
+            case _string.__r_user_account.__decode():
+                fun = getUserAccount
                 break
             case _string.__r_group_list.__decode():
                 fun = listGroup

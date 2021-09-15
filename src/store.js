@@ -26,17 +26,24 @@ export default new Vuex.Store({
     choiceTime: 'range',
     minTime: 5,
     maxTime: 10,
-    regime: 'regime_text'
+    regime: ["Text"],
+    customGroupList: [],
+    account_list: []
   },
 
   getters: {
   },
 
   mutations: {
+    set_user_account: (state, data) => {
+      state.account_list = data;
+    },
     set_limit_post: (state, data) => {
       state.limitPost = data;
     },
-
+    set_custom_groupList: (state, data) => {
+      state.customGroupList = data;
+    },
     set_tag_list: (state, data) => {
       state.tagList = data
     },
@@ -52,7 +59,7 @@ export default new Vuex.Store({
     },
     set_attachment_data: (state, data) => {
       state.attachmentData = data
-      console.log("Attachment Data: ", state.attachmentData);
+      console.log("Status Attachment Data: ", state.attachmentData);
     },
     set_groups: (state, group) => {
       state.groups = group
@@ -95,6 +102,16 @@ export default new Vuex.Store({
         resolve(UserRepository.get())
       })
     },
+    //GET ALL ACCOUNT
+    listAccount: ({ commit, dispatch }, token) => {
+      console.log("Trigger get account list store!!!");
+      return new Promise(async (resolve, reject) => {
+        const accountList = await UserRepository.getAccount(token);
+       
+        commit("set_user_account", accountList.data)
+        resolve(accountList.data)
+      })
+    },
     // GET ALL GROUP
     listGroup: ({ commit, dispatch }, token) => {
       return new Promise(async (resolve, reject) => {
@@ -119,7 +136,7 @@ export default new Vuex.Store({
         const response = await GroupRepository.comment(params)
         // console.log("COMMENT RESPONSE:", comment_link);
         // commit('set_group_post', pages.data)
-         resolve(response.data)
+        resolve(response.data)
       })
     },
     //  Create new post in a group

@@ -63,7 +63,9 @@
     "note_message": "NOTE: Nếu chọn nhiều loại đính kèm, bài đăng sẽ lựa chọn ngẫu nhiêu trong các loại đính kèm được chọn",
     "time_remain": "Bài viết tiếp theo được đăng sau ",
     "second": " giây",
+    "label_regime":"Chế độ comment",
     "add_content": "Thêm nội dung",
+    "add_custom_group":"Thêm id group tùy chọn",
     "btn_add_group": "Thêm tên group",
     "btn_copy_icon":"Thêm ngẫu nhiên Icon",
     "note_content": "NOTE: Nội dung sẽ được random trong các nội dung được tạo",
@@ -88,5 +90,8 @@
     "regime_text_link": "Chỉ text hoặc (text + link)",
     "regime_text_link_file": "Chỉ text hoặc (text + link) hoặc (text + file)",
     "fill_group": "Điền danh sách id nhóm đã join, mỗi id group 1 dòng",
-    "or": "hoặc"
+    "or": "hoặc",
+    "label_add_custom_group":"Nhập ID Group, mỗi group cách nhau 1 khoảng trắng. VD: 123456789  123456666",
+    "invalid_group_id":"Id của group không hợp lệ tại vị trí: ",
+    "use_page":"Lựa chọn page sử dụng để comment (bỏ trống nếu không cần)"
 }

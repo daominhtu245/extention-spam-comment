@@ -1,7 +1,7 @@
 <template>
   <v-card class="px-0 py-0 mt-5 mb-0 pt-3">
     <v-card-title>
-      2. {{$t("select_group")}}
+      2. {{ $t("select_group") }}
       <v-spacer></v-spacer>
     </v-card-title>
     <v-row style="padding: 10px">
@@ -37,7 +37,27 @@
       <template #item.cover="{ value }">
         <img :src="value" class="group-cover" alt="" />
       </template>
+      <template #item.id="{ value }">
+        <a
+          :href="`https://facebook.com/` + value"
+          target="_blank"
+          class="group-cover"
+          alt=""
+        >
+          {{ value }}</a
+        >
+      </template>
     </v-data-table>
+    <v-card-title>
+      3. {{ $t("add_custom_group") }}
+      <v-spacer></v-spacer>
+    </v-card-title>
+    <v-textarea
+      style="margin: 15px"
+      :placeholder="$t('label_add_custom_group')"
+      @change="selectCustomId"
+    >
+    </v-textarea>
   </v-card>
 </template>
 <script>
@@ -56,6 +76,7 @@ export default {
           value: "cover",
         },
         { text: "NAME", value: "name" },
+        { text: "PRIVACY", value: "privacy" },
         { text: "MEMBER", value: "memberCount" },
         { text: "ID", value: "id" },
       ],
@@ -113,6 +134,7 @@ export default {
           name: item.name,
           id: item.id,
           memberCount: item.member_count,
+          privacy: item.privacy,
         });
       }
       this.validGroup = this.groups;
@@ -166,7 +188,7 @@ export default {
         const REMOVE_INDEX = this.selectedList.indexOf(selectedGroup.id);
         this.selectedList.splice(REMOVE_INDEX, 1);
       }
-      this.$store.commit("set_groups",this.selectedList);
+      this.$store.commit("set_groups", this.selectedList);
     },
     // Chọn select all group
     selectAllGroup(value) {
@@ -188,6 +210,25 @@ export default {
         }
       }
       this.$store.commit("set_groups", this.selectedList);
+    },
+    //Nhập Id tùy chọn
+    selectCustomId(value) {
+      value = value.replaceAll(/(\r\n|\n|\r)/gm, " ");
+      console.log("Raw custom group:",value);
+      let validChar = [" ", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+      for (let i = 0; i < value.length; i++) {
+        if (!validChar.includes(value[i])) {
+          alert(this.$t("invalid_group_id") + i);
+          return;
+        }
+      }
+      let idArray = value.replaceAll(/\s+/g, " ");
+      idArray = idArray.split(" ");
+      let customListGroup = idArray.map((id) => {
+        return { id: id, name: id };
+      });
+      this.$store.commit("set_custom_groupList", customListGroup);
+      console.log("Custom Group:", this.$store.state.customGroupList);
     },
   },
 };

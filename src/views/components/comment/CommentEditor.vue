@@ -15,9 +15,7 @@
           $t("sample_spin")
         }},
       </p>
-      <p class="green--text text--darken-4">
-        {@userID@}:{{ $t("tag_user") }}
-      </p>
+      <p class="green--text text--darken-4">{@userID@}:{{ $t("tag_user") }}</p>
       <p style="color: red">
         {{ $t("warning_split") }}
       </p>
@@ -36,7 +34,7 @@
             class="position-absolute btn-dynammic"
             depressed
             small
-            @change="splitText($event)"
+            @change="splitText($event, i)"
             style="color: green"
           ></v-switch>
           <!-- TEXT FIELD -->
@@ -49,9 +47,42 @@
             placeholder="Content of comment"
           >
           </textarea>
+          <v-icon
+            x-large
+            color="red darken-3"
+            v-if="content.length > 1"
+            style="vertical-align: super"
+            @click="
+              () => {
+                content = content.filter((con, j) => j !== i);
+                contentIndex = content.length - 1;
+              }
+            "
+          >
+            mdi-minus-box
+          </v-icon>
         </v-col>
       </v-row>
       <!-- DYNAMIC TAG  -->
+      <v-row>
+        <v-col sm="12">
+          <v-btn
+            class="position-absolute mr-1"
+            depressed
+            small
+            color="blue darken-3"
+            @click="
+              () => {
+                content.push('');
+                contentIndex = content.length - 1;
+              }
+            "
+          >
+            <v-icon>mdi-comment-plus-outline</v-icon>
+            {{ $t("add_content") }}
+          </v-btn>
+        </v-col>
+      </v-row>
       <v-row>
         <!-- DINAMIC TAG ROW 1 -->
         <v-col sm="12" class="" v-if="content.length">
@@ -144,17 +175,17 @@
           >{{ $t("label_post_limit") }}
         </label>
         <div style="width: 170px">
-          <v-select
+          <v-text-field
             id="post-limit"
             class="position-absolute"
             style="margin-left: 5px"
-            :items="postLimit"
-            item-text="text"
-            item-value="value"
+            type="number"
+            min="1"
+            step="1"
             label="Số bài comment"
             dense
             @change="setLimitPost"
-          ></v-select>
+          ></v-text-field>
         </div>
       </v-col>
     </v-card-text>
@@ -165,31 +196,111 @@
       </p>
       <v-row>
         <!--image-->
-        <v-col cols="12" sm="2" class="pt-0 pb-0">
-          <v-checkbox
-            hide-details
-            class="shrink mt-4"
-            value="images"
-            v-model="attachment"
-            :label="$t('attach_image')"
+        <v-row>
+          <v-col cols="12" sm="2" class="pt-0 pb-0">
+            <v-checkbox
+              hide-details
+              class="shrink mt-4"
+              value="images"
+              v-model="attachment"
+              :label="$t('attach_image')"
+            >
+            </v-checkbox>
+          </v-col>
+          <v-col cols="12" sm="8" class="pt-0 pb-0">
+            <v-file-input
+              :label="$t('choice_image')"
+              filled
+              prepend-icon="mdi-camera"
+              multiple
+              chips
+              v-model="images"
+              accept="image/png, image/jpeg, image/bmp"
+              :disabled="!attachment.includes('images')"
+            ></v-file-input>
+          </v-col>
+        </v-row>
+        <v-row>
+          <!--link-->
+          <v-col cols="12" sm="2" class="pt-1 pb-0">
+            <v-checkbox
+              hide-details
+              class="shrink mt-4"
+              value="link"
+              v-model="attachment"
+              :label="$t('attach_link')"
+            >
+            </v-checkbox>
+          </v-col>
+          <v-col cols="12" sm="8" style="position: relative">
+            <v-row v-for="(lin, i) in link" :key="i">
+              <v-col cols="12" sm="11" class="pt-0 pb-0">
+                <v-text-field
+                  hide-details
+                  v-model="link[i]"
+                  :label="$t('link_attach_post')"
+                  prepend-icon="mdi-link"
+                  :disabled="!attachment.includes('link')"
+                  solo
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" sm="1">
+                <v-icon
+                  v-if="link.length > 1"
+                  :disabled="!attachment.includes('link')"
+                  large
+                  color="red darken-3"
+                  @click="
+                    () => {
+                      link = link.filter((li, j) => j !== i);
+                    }
+                  "
+                >
+                  mdi-minus-box
+                </v-icon>
+              </v-col>
+            </v-row>
+            <div
+              :style="{
+                position: 'absolute',
+                left: '45px',
+                bottom: link.length > 1 ? '-12px' : '-24px',
+              }"
+            >
+              <v-icon
+                color="blue darken-3"
+                large
+                :disabled="!attachment.includes('link')"
+                @click="
+                  () => {
+                    link.push('');
+                  }
+                "
+                >mdi-plus-box
+              </v-icon>
+            </div>
+          </v-col>
+          <v-col
+            cols="12"
+            sm="2"
+            :class="[
+              'pt-2',
+              'pb-0',
+              link.length > 1 ? 'd-flex align-center' : '',
+            ]"
           >
-          </v-checkbox>
-        </v-col>
-        <v-col cols="12" sm="8" class="pt-0 pb-0">
-          <v-file-input
-            :label="$t('choice_image')"
-            filled
-            prepend-icon="mdi-camera"
-            multiple
-            chips
-            v-model="images"
-            accept="image/png, image/jpeg, image/bmp"
-            :disabled="!attachment.includes('images')"
-          ></v-file-input>
-        </v-col>
-        <v-col cols="12" sm="2" class="pt-0 pb-0">
-          
-        </v-col>
+            <v-checkbox
+              hide-details
+              class="shrink mt-4"
+              value="link"
+              color="indigo"
+              v-model="randomLink"
+              :label="$t('random_link')"
+              :disabled="!attachment.includes('link')"
+            >
+            </v-checkbox>
+          </v-col>
+        </v-row>
       </v-row>
       <v-row class="pt-2 mt-8">
         <v-radio-group v-model="choiceTime" row>
@@ -251,9 +362,17 @@
           </v-col>
         </v-radio-group>
       </v-row>
-    <!-- Chế độ gửi -->
+      <!-- Chế độ gửi -->
       <v-row class="pt-0">
-        <v-radio-group
+        <v-select
+          :items="regimeOption"
+          item-text="text"
+          item-value="value"
+          :label="$t('label_regime')"
+          solo
+          v-model="choiceRegime"
+        ></v-select>
+        <!-- <v-radio-group
           v-model="choiceRegime"
           row
           class="mt-0"
@@ -289,7 +408,7 @@
             >
             </v-radio>
           </v-col>
-          <!-- <v-col cols="12" sm="2" class="pt-0 pb-0">
+           <v-col cols="12" sm="2" class="pt-0 pb-0">
             <v-radio
               hide-details
               class="shrink mt-4"
@@ -307,7 +426,7 @@
             >
             </v-radio>
           </v-col> -->
-        </v-radio-group>
+        <!-- </v-radio-group> -->
       </v-row>
     </v-card-text>
   </v-card>
@@ -358,7 +477,41 @@ export default {
       choiceTime: "range",
       minTime: "10",
       maxTime: "60",
-      choiceRegime: "regime_text",
+      choiceRegime: ["Text"],
+      regimeOption: [
+        {
+          value: ["Text"],
+          text: "Text",
+        },
+        {
+          value: ["Image"],
+          text: "Image",
+        },
+        {
+          value: ["Link"],
+          text: "Link",
+        },
+        {
+          value: ["Text", "Image"],
+          text: "Text + Image",
+        },
+        {
+          value: ["Text", "Link"],
+          text: "Text + Link",
+        },
+        {
+          value: ["Image", "Link"],
+          text: "Image + Link",
+        },
+        {
+          value: ["Text", "Image", "Link"],
+          text: "Text + Image + Link",
+        },
+        {
+          value: ["Random"],
+          text: "Random",
+        },
+      ],
     };
   },
 
@@ -369,6 +522,7 @@ export default {
   watch: {
     choiceRegime() {
       this.$store.commit("set_regime", this.choiceRegime);
+      console.log("Comment option: ", this.$store.state.regime);
     },
 
     images() {
@@ -393,8 +547,6 @@ export default {
       if (this.attachment.includes("images") && this.images.length) {
         this.setFile("images");
       }
-
-
     },
 
     content() {
@@ -488,8 +640,9 @@ export default {
       this.$store.commit("set_content", this.content);
     },
 
-    splitText(value) {
-      let content = this.content[this.contentIndex];
+    splitText(value, i) {
+      console.log(`Value: ${value} ----- Index: ${i}`);
+      let content = this.content[i];
       if (content.charAt(0) == "{") {
         content = "|" + content;
       }
@@ -506,9 +659,9 @@ export default {
           content += `{${contentArray[i]}}`;
         }
       }
-      this.content[this.contentIndex] = content;
-      document.getElementById(`content-${this.contentIndex}`).value =
-        this.content[this.contentIndex];
+      this.content[i] = content;
+      document.getElementById(`content-${i}`).value =
+        this.content[i];
       this.$store.commit("set_content", this.content);
     },
 
@@ -541,9 +694,8 @@ export default {
     },
 
     setLimitPost(value) {
-      // console.log(`Limit comment at ${value} post`);
       this.$store.commit("set_limit_post", value);
-      console.log(`Limit comment at ${this.$store.state.limitPost} post`);
+      // console.log(`Limit comment at ${this.$store.state.limitPost} post`);
     },
 
     setFile(obj) {

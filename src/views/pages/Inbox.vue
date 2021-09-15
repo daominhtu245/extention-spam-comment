@@ -43,6 +43,35 @@
               Stop!</v-btn
             >
           </v-row>
+          <!-- SELECT PAGE TO USE -->
+          <v-row style="margin: 15px; justify-content: center">
+            <v-col sm="12" style="padding: 0px; margin: 0px">
+              <p
+                style="
+                  padding: 0px;
+                  margin: 0px;
+                  font-weight: bold;
+                  color: green;
+                "
+              >
+                {{ $t("use_page") }}
+              </p>
+            </v-col>
+            <v-col sm="12" style="padding: 0px; margin: 0px">
+              <v-select
+                style="padding: 0px; margin: 0px"
+                :items="accountList"
+                item-text="name"
+                item-value="id"
+                attach
+                chips
+                label="Select Page"
+                multiple
+                @change="setSelectedPage"
+              >
+              </v-select>
+            </v-col>
+          </v-row>
           <!-- Current GROUP -->
           <v-row
             v-html="currentGroup"
@@ -143,10 +172,12 @@ export default {
         label: this.$t("stop"),
       },
     };
+    this.getAccountList();
   },
 
   data() {
     return {
+      selectedPage: [],
       isProgressing: false,
       progressBar: 0,
       logger: "",
@@ -210,6 +241,7 @@ export default {
       },
       loading1: false,
       timeRemain: 0,
+      accountList: [],
     };
   },
 
@@ -289,7 +321,6 @@ export default {
         }
       }
       await this.$store.commit("set_tag_list", tagList);
-      console.log("TAG LIST:", this.$store.state.tagList);
     },
 
     handleSpin() {
@@ -318,9 +349,12 @@ export default {
     },
 
     async startComment() {
-      const listGroupId = this.$store.state.groups;
-      const allGroup = this.$store.state.groupsList;
-
+      let listGroupId = this.$store.state.groups;
+      let allGroup = this.$store.state.groupsList;
+      let customListGroup = this.$store.state.customGroupList;
+      let customListId = customListGroup.map((group) => group.id);
+      allGroup = allGroup.concat(customListGroup);
+      listGroupId = listGroupId.concat(customListId);
       if (listGroupId.length == 0) {
         alert(this.$t("pls_choice_post"));
         return;
@@ -355,11 +389,10 @@ export default {
           );
           timeGetPost += step;
           let getPostTimeout = setTimeout(async () => {
-            console.log("Get Post !!!!");
-            let comment = this.combineContent(group);
             let postList = await this.getGroupPost(group);
             //let postList = ["123"];
             postList.map((postId) => {
+              let comment = this.combineContent(group);
               // XÁC ĐỊNH GROUP ĐANG TÌM POST
               this.currentGroup = `<p style="color:#0084c6;font-weight:bold"> ${
                 this.$t("find_post") + group.name
@@ -375,15 +408,23 @@ export default {
 
                 this.postComment(postId, comment, group);
               }, timeComment * 1000);
-              this.onSendding.push(getCommentTimeout);
+              this.onSendding.push({ group: group.id, type:"comment",timeOutId: getCommentTimeout });
             });
           }, timeGetPost * 1000);
-          this.onSendding.push(getPostTimeout);
+          this.onSendding.push({ group: group.id, type:"post",timeOutId: getPostTimeout });
         }
       }
     },
 
+    async getAccountList() {
+      console.log("Trgger get account list");
+      let accountLists = await this.$store.dispatch("listAccount", "");
+      console.log("Final Account List: ", accountLists);
+      this.accountList = accountLists;
+    },
+
     async stopComment() {
+      console.log("Timeout List: ",this.onSendding);
       for (let i = 0; i < this.onSendding.length; i++) {
         clearTimeout(this.onSendding[i]);
       }
@@ -391,43 +432,93 @@ export default {
       this.sendding = 0;
       this.onSendding = [];
       this.isProgressing = false;
-      this.currentGroup = `<p style="color:red;font-weight:bold"> ${
-        this.$t("cancel_comment_process")
-      }</p>`;
+      this.currentGroup = `<p style="color:red;font-weight:bold"> ${this.$t(
+        "cancel_comment_process"
+      )}</p>`;
+    },
+
+    handleRegime(contents) {
+      let comment = contents;
+      let attachment = "text";
+      // console.log("Origin Attachment Array: ", attachmentArray);
+      // let attachmentArray = this.attachment;
+
+      //Hande Text
+      if (!this.regime.includes("Text")) {
+        comment = "";
+      }
+      // Handle Image
+      if (this.regime.includes("Image") && this.attachmentData["images"]) {
+        attachment =
+          this.attachmentData["images"].length > 0 ? "images" : "text";
+      }
+      let attachmentData = null;
+      if (attachment == "images") {
+        const dt = this.attachmentData["images"];
+        attachmentData = [dt[Math.floor(Math.random() * dt.length)]];
+      } else {
+        attachmentData = null;
+      }
+      console.log("COMMENT ATTACHMENT TYPE:: ", attachment);
+      console.log("COMMENT ATTACHMENT DATA: ", attachmentData);
+      if (this.regime.includes("Link")) {
+        const dt = this.attachmentData["link"];
+        comment += this.randomLink
+          ? dt[Math.floor(Math.random() * dt.length)]
+          : dt[0];
+      }
+      console.log("Final Comment :", comment);
+      console.log("Final Attachment :", attachmentData);
+    },
+    setSelectedPage(value) {
+      this.selectedPage = value;
+      console.log("selectedPage = ", this.selectedPage);
     },
 
     async postComment(postId, comment, group) {
       // Handle Upload Attachment
-      let attachmentArray = this.attachment;
-      if (this.regime === "regime_text") {
-        attachmentArray = ["text"];
-      } else if (this.regime === "regime_text_file") {
-        attachmentArray = ["text"].concat(
-          this.attachment.filter((item) => ["files", "images"].includes(item))
-        );
-      } else if (
-        this.regime === "regime_file" &&
-        this.attachmentData["images"]
-      ) {
-        attachmentArray =
-          this.attachmentData["images"].length > 0 ? ["images"] : ["text"];
-        console.log(
-          "Attachment State Length:",
-          this.attachmentData["images"].length
-        );
+      let attachment = "text";
+      // console.log("Origin Attachment Array: ", attachmentArray);
+      // let attachmentArray = this.attachment;
+      if (this.regime.includes("Random")) {
+        this.$store.commit("set_regime", ["Random"]);
+        let regimeOption = ["Text", "Image", "Link"];
+        let regimeLength = Math.floor(Math.random() * (3 - 1 + 1)) + 1;
+        for (let i = 0; i < regimeLength; i++) {
+          let selectedIndex = Math.floor(Math.random() * regimeOption.length);
+          this.regime.push(regimeOption[selectedIndex]);
+          regimeOption.splice(selectedIndex, 1);
+        }
       }
-      const attachment =
-        attachmentArray[Math.floor(Math.random() * attachmentArray.length)];
+      //Hande Text
+      if (!this.regime.includes("Text")) {
+        comment = " ";
+      }
+      // Handle Image
+      if (this.regime.includes("Image") && this.attachmentData["images"]) {
+        attachment =
+          this.attachmentData["images"].length > 0 ? "images" : "text";
+      }
       let attachmentData = null;
-      if (attachment === "images") {
+      if (attachment == "images") {
         const dt = this.attachmentData["images"];
         attachmentData = [dt[Math.floor(Math.random() * dt.length)]];
-      }
-      console.log("Attachment Type: ", attachment);
-      console.log("ATTACHMENT DATA: ", attachmentData);
-
-      if (attachment === "text") {
+      } else {
         attachmentData = null;
+      }
+      if (this.regime.includes("Link") && this.attachmentData["link"]) {
+        const dt = this.attachmentData["link"];
+        comment += " ";
+        comment += this.randomLink
+          ? dt[Math.floor(Math.random() * dt.length)]
+          : dt[0];
+      }
+      let pageId = null;
+      if (this.selectedPage.length > 0) {
+        pageId =
+          this.selectedPage[
+            Math.floor(Math.random() * this.selectedPage.length)
+          ];
       }
       this.$store
         .dispatch("comment", {
@@ -436,6 +527,7 @@ export default {
           tagList: this.$store.state.tagList,
           attachment: attachment,
           attachmentData: attachment === "images" ? [attachmentData[0]] : null,
+          pageId: pageId,
         })
         .then(async (result) => {
           if (this.sendding > 0) {
@@ -446,7 +538,7 @@ export default {
             this.logger +=
               '<p style="color: #ff312a">' +
               this.$t("error_post") +
-              ' <a style="color: #1e55e3" href="https://www.facebook.com/groups/' +
+              ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
               group.id +
               '" target="_blank">' +
               group.name +
@@ -458,7 +550,7 @@ export default {
             this.logger +=
               '<p style="color: #008037">' +
               this.$t("success_post") +
-              ' <a style="color: #1e55e3" href="https://www.facebook.com/groups/' +
+              ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
               group.id +
               '" target="_blank">' +
               group.name +
