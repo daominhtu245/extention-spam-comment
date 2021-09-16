@@ -93,5 +93,7 @@
     "or": "hoặc",
     "label_add_custom_group":"Nhập ID Group, mỗi group cách nhau 1 khoảng trắng. VD: 123456789  123456666",
     "invalid_group_id":"Id của group không hợp lệ tại vị trí: ",
-    "use_page":"Lựa chọn page sử dụng để comment (bỏ trống nếu không cần)"
+    "use_page":"Lựa chọn page sử dụng để comment (bỏ trống nếu không cần)",
+    "skip_group":"Xảy ra lỗi quá 2 lần, tự động bỏ qua group: ",
+    "label_select_regime":"Lựa chọn chế độ comment"
 }

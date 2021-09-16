@@ -242,6 +242,7 @@ export default {
       loading1: false,
       timeRemain: 0,
       accountList: [],
+      errorCount: [],
     };
   },
 
@@ -408,10 +409,18 @@ export default {
 
                 this.postComment(postId, comment, group);
               }, timeComment * 1000);
-              this.onSendding.push({ group: group.id, type:"comment",timeOutId: getCommentTimeout });
+              this.onSendding.push({
+                group: group.id,
+                type: "comment",
+                timeOutId: getCommentTimeout,
+              });
             });
           }, timeGetPost * 1000);
-          this.onSendding.push({ group: group.id, type:"post",timeOutId: getPostTimeout });
+          this.onSendding.push({
+            group: group.id,
+            type: "post",
+            timeOutId: getPostTimeout,
+          });
         }
       }
     },
@@ -423,10 +432,36 @@ export default {
       this.accountList = accountLists;
     },
 
-    async stopComment() {
-      console.log("Timeout List: ",this.onSendding);
+    setErrorCount(groupId) {
+      if (this.errorCount.indexOf(groupId) < 0) {
+        this.errorCount.push(groupId);
+        return false;
+      } else {
+        this.stopCommentInGroup(groupId);
+        return true;
+      }
+    },
+
+    stopCommentInGroup(groupId) {
       for (let i = 0; i < this.onSendding.length; i++) {
-        clearTimeout(this.onSendding[i]);
+        if (this.onSendding[i].group == groupId) {
+          clearTimeout(this.onSendding[i].timeOutId);
+        }
+      }
+      let limit = this.$store.state.limitPost;
+      this.error += limit - 2;
+      this.sendding -= limit - 2;
+      if(this.sendding < 0){
+        this.sendding = 0;
+        this.error = this.numSend - this.success
+      }
+      this.progressBar =
+        (1 - parseFloat(this.sendding) / parseFloat(this.numSend)) * 100;
+    },
+
+    async stopComment() {
+      for (let i = 0; i < this.onSendding.length; i++) {
+        clearTimeout(this.onSendding[i].timeOutId);
       }
       this.progressBar = 0;
       this.sendding = 0;
@@ -530,13 +565,15 @@ export default {
           pageId: pageId,
         })
         .then(async (result) => {
+          let now = new Date();
+          let currentTime = now.getHours()+":"+now.getMinutes()+":"+now.getSeconds();
           if (this.sendding > 0) {
             this.sendding -= 1;
           }
           if (result.isError) {
             this.error++;
             this.logger +=
-              '<p style="color: #ff312a">' +
+              '<p style="color: #ff312a">' +currentTime+" "+
               this.$t("error_post") +
               ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
               group.id +
@@ -545,10 +582,22 @@ export default {
               "</a>: " +
               result.description +
               "</p>";
+            let isSkip = this.setErrorCount(group.id);
+            if (isSkip) {
+              this.logger +=
+                '<p style="color: #ff312a">' +currentTime+" "+
+                this.$t("skip_group") +
+                ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
+                group.id +
+                '" target="_blank">' +
+                group.name +
+                "</a>: " +
+                "</p>";
+            }
           } else {
             this.success++;
             this.logger +=
-              '<p style="color: #008037">' +
+              '<p style="color: #008037">' +currentTime+" "+
               this.$t("success_post") +
               ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
               group.id +

@@ -680,15 +680,21 @@
         }
     }
 
-    const uploadImage = async (data, fileGet) => {
+    const uploadImage = async (pageId, uid, fileGet) => {
         const form = newFormData();
-        const id = getUserId();
+        console.log(`Page Id: ${pageId}|| User Id: ${uid}`);
+        let id = pageId != null ? pageId : uid
         let query = [
-            _string.__av.__decode() + '=' + id,
-            _string.__user.__decode() + '=' + id,
+            _string.__av.__decode() + '='+ id,
+            _string.__user.__decode() + '=' + uid,
             _string.__a.__decode() + '=' + 1,
+            "profile_id=" + id,
+            "target_id=" + id,
             _string.__fb_dtsg.__decode() + '=' + getDtsgFromStorage(),
+            "source=19",
         ];
+        console.log("Upload Image query:\n ", query);
+        console.log("Upload Image query 2:\n ", query.join('&'));
         appendForm(form, _string.__source.__decode(), 8);
         appendForm(form, _string.__profile_id.__decode(), id);
         appendForm(form, _string.__upload_id.__decode(), _string.__upload_id_value);
@@ -701,20 +707,20 @@
         appendForm(form, _string.__farr.__decode(), file);
         const response = await _sendRequest({
             method: _string.__method_post.__decode(),
-            url: _url.__fb_upload_ajax_react.__decode() + '?' + query.join('&'),
+            url: _url.__fb_upload_ajax_react.__decode()  + query.join('&'),
             data: form,
         })
         const dataImage = JSON.parse(response.data.replace('for (;;);', ''))
         return dataImage.payload.photoID
     }
 
-    const uploadFile = async (data, fileGet) => {
+    const uploadFile = async (pageId, uid, fileGet) => {
         const form = newFormData();
-        const id = getUserId();
         let query = [
-            _string.__av.__decode() + '=' + id,
-            _string.__user.__decode() + '=' + id,
+            _string.__av.__decode() + '=' + pageId != null ? pageId : uid,
+            _string.__user.__decode() + '=' + uid,
             _string.__a.__decode() + '=' + 1,
+
             _string.__fb_dtsg.__decode() + '=' + getDtsgFromStorage(),
         ];
 
@@ -766,157 +772,158 @@
     };
     const postComment = async (params) => {
         console.log("Trigger: ", params);
-        try {
-            let cookie = "";
-            let cookieList = await getAllCookies();
-            for (let i = 0; i < cookieList.length; i++) {
-                const cookies = cookieList[i];
-                cookie += `${cookies.name}=${cookies.value};`
-            }
-            const token = getTouchToStorage();
-            const uid = getUserId()
-            let rawPostId = params.data.postId.split('_');
-            const postId = rawPostId[rawPostId.length - 1]
-            const pageId = params.data.pageId;
-            let text = params.data.comment
-            const tagList = params.data.tagList//Array of ID
-            let mediaId = ''
-            const fbDtsg = await getDtsgFromStorage();
-            //    Get img id
-            if (params.data.attachment === 'images' && params.data.attachmentData.length) {
-                for (let i = 0; i < params.data.attachmentData.length; i++) {
-                    const file = params.data.attachmentData[i]
-                    const imageId = await uploadImage("message", file)
-                    mediaId = imageId;
-                }
-            }
+        // let cookie = "";
+        // let cookieList = await getAllCookies();
+        // for (let i = 0; i < cookieList.length; i++) {
+        //     const cookies = cookieList[i];
+        //     cookie += `${cookies.name}=${cookies.value};`
+        // }
+        const token = getTouchToStorage();
+        const uid = getUserId()
+        let rawPostId = params.data.postId.split('_');
+        const postId = rawPostId[rawPostId.length - 1]
+        const pageId = params.data.pageId;
+        let text = params.data.comment
+        const tagList = params.data.tagList//Array of ID
+        let mediaId = ''
+        const fbDtsg = await getDtsgFromStorage();
+        //    Get img id
+        if (params.data.attachment === 'images' && params.data.attachmentData.length) {
 
-            // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
-            let tagLen = tagList.length
-            let tags = []
-            for (let i = 0; i < tagLen; i++) {
-                const axiosOption = {
-                    url: _url.__api_graph_api.__decode() + `${tagList[i]}?access_token=${token}`,
-                    method: 'get',
-                    headers: {
-                        'Cookie': cookie,
-                        'user-agent': _string.__user_agent_value.__decode(),
-                        'accept': _string.__accept_value.__decode(),
-                        proxy: [],
-                    },
-                };
-                const responseData = await axios.request(axiosOption)
-                const tagData = responseData.data;
-                if (tagData) {
-                    tags.push({
-                        id: tagList[i],
-                        name: tagData.name
-                    })
-                }
+            for (let i = 0; i < params.data.attachmentData.length; i++) {
+                const file = params.data.attachmentData[i]
+                const imageId = await uploadImage(pageId, uid, file)
+                mediaId = imageId;
             }
-            tags.forEach(tag => {
-                text = text.replace(tag.id, tag.name)
-            })
-            let ranges = []
-            tags.forEach(tag => {
-                ranges.push({
-                    'entity': {
-                        'id': tag.id
-                    },
-                    'length': tag.name.length,
-                    'offset': text.indexOf(tag.name)
-                })
-            })
-            // endcomment sticker + image
-            const dataObject = {
-                av: pageId != null ? pageId : uid,
-                __user: uid,
-                __a: 1,
-                fb_dtsg: fbDtsg,
-                fb_api_caller_class: _string.__replay_modern.__decode(),
-                fb_api_req_friendly_name: _string.__comment_friendly_name.__decode(),
-                variables: {
-                    displayCommentsFeedbackContext: null,
-                    displayCommentsContextEnableComment: null,
-                    displayCommentsContextIsAdPreview: null,
-                    displayCommentsContextIsAggregatedShare: null,
-                    displayCommentsContextIsStorySet: null,
-                    feedLocation: _string.__permalink.__decode(),
-                    feedbackSource: 2,
-                    includeNestedComments: false,
-                    input: {
-                        attachments: mediaId ? [
-                            {
-                                media: {
-                                    id: mediaId,
-                                },
-                            }
-                        ] : null,
-                        feedback_id: btoa(_string.__feedback.__decode() + postId).toString('base64'),
-                        message: {
-                            ranges: ranges,
-                            text: text,
-                        },
-                        feedback_source: _string.__object.__decode(),
-                        idempotence_token: _string.__client.__decode() + create_UUID(),
-                        actor_id: pageId ? pageId : uid,
-                        client_mutation_id: 3
-                    },
-                    scale: 1,
-                    useDefaultActor: false,
-                    UFI2CommentsProvider_commentsKey: _string.__UFI2CommentsProvider_commentsKey.__decode(),
+        }
+        console.log("MediaId: ", mediaId);
+        // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
+        let tagLen = tagList.length
+        let tags = []
+        for (let i = 0; i < tagLen; i++) {
+            const axiosOption = {
+                url: _url.__api_graph_api.__decode() + `${tagList[i].trim()}?access_token=${token}`,
+                method: 'get',
+                // 'Cookie': cookie,
+                // 'user-agent': _string.__user_agent_value.__decode(),
+                headers: {
+                    'accept': _string.__accept_value.__decode(),
+                    proxy: [],
                 },
-                doc_id: '4909925142382339',
-                server_timestamps: true
+            };
+            const responseData = await axios.request(axiosOption)
+            const tagData = responseData.data;
+            if (tagData) {
+                tags.push({
+                    id: tagList[i],
+                    name: tagData.name
+                })
             }
-            const data = await parseData(dataObject)
-            let axiosOption = {}
-            try {
-                axiosOption = {
-                    url: _url.__fb_graphql_api.__decode(),
-                    method: _string.__method_post.__decode(),
-                    headers: {
-                        'accept': '*/*',
-                        'accept-language': _string.__accept_language.__decode(),
-                        'cache-control': _string.__no_cache.__decode(),
-                        'content-type': _string.__content_type.__decode(),
-                        'pragma': _string.__no_cache.__decode(),
-                        'viewport-width': _string.__view_port.__decode(),
-                        proxy: []
+        }
+        tags.forEach(tag => {
+            text = text.replace(tag.id, tag.name)
+        })
+        let ranges = []
+        tags.forEach(tag => {
+            ranges.push({
+                'entity': {
+                    'id': tag.id
+                },
+                'length': tag.name.length,
+                'offset': text.indexOf(tag.name)
+            })
+        })
+        // endcomment sticker + image
+        const dataObject = {
+            av: pageId != null ? pageId : uid,
+            __user: uid,
+            __a: 1,
+            fb_dtsg: fbDtsg,
+            fb_api_caller_class: _string.__replay_modern.__decode(),
+            fb_api_req_friendly_name: _string.__comment_friendly_name.__decode(),
+            variables: {
+                displayCommentsFeedbackContext: null,
+                displayCommentsContextEnableComment: null,
+                displayCommentsContextIsAdPreview: null,
+                displayCommentsContextIsAggregatedShare: null,
+                displayCommentsContextIsStorySet: null,
+                feedLocation: _string.__permalink.__decode(),
+                feedbackSource: 2,
+                includeNestedComments: false,
+                input: {
+                    attachments: mediaId ? [
+                        {
+                            media: {
+                                id: mediaId,
+                            },
+                        }
+                    ] : null,
+                    feedback_id: btoa(_string.__feedback.__decode() + postId).toString('base64'),
+                    message: {
+                        ranges: ranges,
+                        text: text,
                     },
-                    data: data,
-                    maxRedirects: 0,
-                };
-            } catch (error) {
-                // console.log("Setup Axios fail", error);
-            }
-            // console.log("Setup Axios success", axiosOption);
-            let response = await axios.request(axiosOption)
-            console.log("Response: ", response);
-            if (response.data.errors) {
-                let description = response.data.errors[0].description.__html ?
-                    response.data.errors[0].description.__html :
-                    response.data.errors[0].description
+                    feedback_source: _string.__object.__decode(),
+                    idempotence_token: _string.__client.__decode() + create_UUID(),
+                    actor_id: pageId ? pageId : uid,
+                    client_mutation_id: 3
+                },
+                scale: 1,
+                useDefaultActor: false,
+                UFI2CommentsProvider_commentsKey: _string.__UFI2CommentsProvider_commentsKey.__decode(),
+            },
+            doc_id: '4909925142382339',
+            server_timestamps: true
+        }
+        console.log("Data Object:", dataObject);
+        const data = await parseData(dataObject)
+        let axiosOption = {}
+        try {
+            axiosOption = {
+                url: _url.__fb_graphql_api.__decode(),
+                method: _string.__method_post.__decode(),
+                headers: {
+                    'accept': '*/*',
+                    'accept-language': _string.__accept_language.__decode(),
+                    'cache-control': _string.__no_cache.__decode(),
+                    'content-type': _string.__content_type.__decode(),
+                    'pragma': _string.__no_cache.__decode(),
+                    'viewport-width': _string.__view_port.__decode(),
+                    proxy: []
+                },
+                data: data,
+                maxRedirects: 0,
+            };
+        } catch (error) {
+            console.log("Setup Axios fail", error);
+        }
+        console.log("Setup Axios success", axiosOption);
+        let response = await axios.request(axiosOption)
+        console.log("Response: ", response.data);
+        if (response.data.errors) {
+            let description = response.data.errors[0].description.__html ?
+                response.data.errors[0].description.__html :
+                response.data.errors[0].description
 
+            return {
+                isError: true,
+                description: description + ":" + response.data.errors[0].debug_info,
+            }
+        } else {
+            console.log("Comment Success: ", response.data.data.comment_create.feedback_comment_edge.node.url);
+            if (response.data.data.comment_create.feedback_comment_edge.node.url === undefined) {
                 return {
                     isError: true,
-                    description: description,
+                    description: "Comment success but can't get comment link",
                 }
-            } else {
-                if (response.data.data.comment_create.feedback_comment_edge.node.url === undefined) {
-                    return {
-                        isError: true,
-                        description: "Comment success but can't get comment link",
-                    }
-                }
+            } else
                 return {
                     isError: false,
                     comment_link: response.data.data.comment_create.feedback_comment_edge.node.url
                 }
-            }
-
-        } catch (err) {
         }
+
+
     }
 
     const parseData = async (dataObject) => {

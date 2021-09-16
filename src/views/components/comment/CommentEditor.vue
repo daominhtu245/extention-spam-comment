@@ -364,7 +364,9 @@
       </v-row>
       <!-- Chế độ gửi -->
       <v-row class="pt-0">
-        <v-select
+        <v-col sm="12"><p style="color:green;font-weight:bold">{{$t("label_select_regime")}}</p></v-col>
+       <v-col sm="12" style="margin:0px;padding:0px">
+          <v-select
           :items="regimeOption"
           item-text="text"
           item-value="value"
@@ -372,6 +374,7 @@
           solo
           v-model="choiceRegime"
         ></v-select>
+       </v-col>
         <!-- <v-radio-group
           v-model="choiceRegime"
           row
