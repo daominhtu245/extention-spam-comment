@@ -1,17 +1,10 @@
-// const { Cheerio } = require('cheerio');
-// import cheerio from "cheerio";
-
-// const { push } = require("core-js/core/array");
-
 (function () {
     const _sendRequest = axios.create();
     const storeData = {};
-    // const cheerio = require('cheerio')
     const _statusFail = 0;
     const _statusSuccess = 1;
     const _statusNotVip = 2;
     const _statusNoLogin = 3;
-
     const _chrome = {
         __browserActionOnClicked: c.browserAction.onClicked,
         __tabsCreate: c.tabs.create,
@@ -644,10 +637,8 @@
     }
     // GET USER's ACCOUNT
     const getUserAccount = async (params) => {
-        console.log("Trigger get user account be");
         try {
             const token = getTouchToStorage();
-            console.log("My token:", token);
             let accountData = await fetch(_url.__api_graph_api_me_account.__decode() + "&access_token=" + token)
             let accountJson = await accountData.json();
             if (accountJson.error) {
@@ -675,17 +666,16 @@
             let postId = postJson.data.map(post => post.id)
             return postId
         } catch (error) {
-            console.log(error)
-            return
+            console.log("Find post Error: ", error)
+            return []
         }
     }
 
     const uploadImage = async (pageId, uid, fileGet) => {
         const form = newFormData();
-        console.log(`Page Id: ${pageId}|| User Id: ${uid}`);
         let id = pageId != null ? pageId : uid
         let query = [
-            _string.__av.__decode() + '='+ id,
+            _string.__av.__decode() + '=' + id,
             _string.__user.__decode() + '=' + uid,
             _string.__a.__decode() + '=' + 1,
             "profile_id=" + id,
@@ -693,8 +683,6 @@
             _string.__fb_dtsg.__decode() + '=' + getDtsgFromStorage(),
             "source=19",
         ];
-        console.log("Upload Image query:\n ", query);
-        console.log("Upload Image query 2:\n ", query.join('&'));
         appendForm(form, _string.__source.__decode(), 8);
         appendForm(form, _string.__profile_id.__decode(), id);
         appendForm(form, _string.__upload_id.__decode(), _string.__upload_id_value);
@@ -707,7 +695,7 @@
         appendForm(form, _string.__farr.__decode(), file);
         const response = await _sendRequest({
             method: _string.__method_post.__decode(),
-            url: _url.__fb_upload_ajax_react.__decode()  + query.join('&'),
+            url: _url.__fb_upload_ajax_react.__decode() + query.join('&'),
             data: form,
         })
         const dataImage = JSON.parse(response.data.replace('for (;;);', ''))
@@ -770,72 +758,126 @@
             }, (data) => res(data));
         });
     };
+
+    // GET NAME OF CUSTOM GROUP
+    const getCustomGroupName = async (id) => {
+        let token = getTouchToStorage();
+        let api = _url.__api_graph_api_me.__decode();
+        api = api.replace("me", "");
+        api += id + "?access_token=" + token;
+        let responseData = null, dataJson = null;
+        try {
+            responseData = await fetch(api);
+            dataJson = await responseData.json();
+        } catch (error) {
+            console.log("Can't find group name");
+        }
+
+        // console.log("Response Data: ", dataJson);
+        return dataJson;
+
+    }
+
+    const getPageProfileId = async (pageId) => {
+        let getResponse = await fetch(_url.__facebook_www.__decode() + "/" + pageId)
+        let url = getResponse.url;
+        let pageProfileId = url.match(/id=\d+/gm);
+        if (pageProfileId) {
+            let id = pageProfileId[0].replaceAll("id=", "")
+            return id
+        } else {
+            return null;
+        }
+    }
+
+    const getTagedById = async (tagList,token) => {
+        try {
+            // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
+            let tagLen = tagList.length
+            let tags = []
+            for (let i = 0; i < tagLen; i++) {
+                const axiosOption = {
+                    url: _url.__api_graph_api.__decode() + `${tagList[i].trim()}?access_token=${token}`,
+                    method: 'get',
+                    headers: {
+                        'accept': _string.__accept_value.__decode(),
+                        proxy: [],
+                    },
+                };
+                const responseData = await axios.request(axiosOption)
+                const tagData = responseData.data;
+                if (tagData) {
+                    tags.push({
+                        id: tagList[i],
+                        name: tagData.name
+                    })
+                }
+            }
+            tags.forEach(tag => {
+                text = text.replace(tag.id, tag.name)
+            })
+            let ranges = []
+            tags.forEach(tag => {
+                ranges.push({
+                    'entity': {
+                        'id': tag.id
+                    },
+                    'length': tag.name.length,
+                    'offset': text.indexOf(tag.name)
+                })
+            })
+            return ranges
+        } catch (error) {
+            console.log("!!!!! GET TAGED ID FAIL:",error);
+            return []
+        }
+    }
+
+
     const postComment = async (params) => {
-        console.log("Trigger: ", params);
-        // let cookie = "";
-        // let cookieList = await getAllCookies();
-        // for (let i = 0; i < cookieList.length; i++) {
-        //     const cookies = cookieList[i];
-        //     cookie += `${cookies.name}=${cookies.value};`
-        // }
-        const token = getTouchToStorage();
-        const uid = getUserId()
+        let cookie = "";
+        let cookieList = await getAllCookies();
+        for (let i = 0; i < cookieList.length; i++) {
+            const cookies = cookieList[i];
+            cookie += `${cookies.name}=${cookies.value};`
+        }
+        let uid = getUserId();
+        let token = getTouchToStorage();
         let rawPostId = params.data.postId.split('_');
         const postId = rawPostId[rawPostId.length - 1]
-        const pageId = params.data.pageId;
+        let pageId = params.data.pageId;
         let text = params.data.comment
         const tagList = params.data.tagList//Array of ID
         let mediaId = ''
         const fbDtsg = await getDtsgFromStorage();
+        // GET PAGE PROFILE
+        pageId = await getPageProfileId(pageId) ? await getPageProfileId(pageId) : pageId
         //    Get img id
         if (params.data.attachment === 'images' && params.data.attachmentData.length) {
-
             for (let i = 0; i < params.data.attachmentData.length; i++) {
                 const file = params.data.attachmentData[i]
                 const imageId = await uploadImage(pageId, uid, file)
                 mediaId = imageId;
             }
         }
-        console.log("MediaId: ", mediaId);
-        // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
-        let tagLen = tagList.length
-        let tags = []
-        for (let i = 0; i < tagLen; i++) {
-            const axiosOption = {
-                url: _url.__api_graph_api.__decode() + `${tagList[i].trim()}?access_token=${token}`,
-                method: 'get',
-                // 'Cookie': cookie,
-                // 'user-agent': _string.__user_agent_value.__decode(),
-                headers: {
-                    'accept': _string.__accept_value.__decode(),
-                    proxy: [],
-                },
-            };
-            const responseData = await axios.request(axiosOption)
-            const tagData = responseData.data;
-            if (tagData) {
-                tags.push({
-                    id: tagList[i],
-                    name: tagData.name
-                })
-            }
+        //GET CUSTOM GROUP NAME IF NEED
+        let groupId = text.match(/!\d+!/gm)
+        if (groupId) {
+            let groupName = await getCustomGroupName(groupId[0].replaceAll("!", ""))
+            text = text.replaceAll(groupId[0], groupName.name)
         }
-        tags.forEach(tag => {
-            text = text.replace(tag.id, tag.name)
-        })
-        let ranges = []
-        tags.forEach(tag => {
-            ranges.push({
-                'entity': {
-                    'id': tag.id
-                },
-                'length': tag.name.length,
-                'offset': text.indexOf(tag.name)
-            })
-        })
+        let ranges = await getTagedById(tagList,token);
+        console.log(`Comment Param: 
+        Post Id: ${postId}
+        Page Id: ${pageId} !! Uid:${uid}
+        Attachment Type: ${params.data.attachment}
+        Media Id: ${mediaId}
+        Tags: ${ranges.toString()}
+        Comment : ${text}
+        `);
         // endcomment sticker + image
         const dataObject = {
-            av: pageId != null ? pageId : uid,
+            av: pageId ? pageId : uid,
             __user: uid,
             __a: 1,
             fb_dtsg: fbDtsg,
@@ -875,8 +917,8 @@
             doc_id: '4909925142382339',
             server_timestamps: true
         }
-        console.log("Data Object:", dataObject);
         const data = await parseData(dataObject)
+
         let axiosOption = {}
         try {
             axiosOption = {
@@ -897,32 +939,41 @@
         } catch (error) {
             console.log("Setup Axios fail", error);
         }
-        console.log("Setup Axios success", axiosOption);
         let response = await axios.request(axiosOption)
-        console.log("Response: ", response.data);
-        if (response.data.errors) {
-            let description = response.data.errors[0].description.__html ?
-                response.data.errors[0].description.__html :
-                response.data.errors[0].description
 
-            return {
-                isError: true,
-                description: description + ":" + response.data.errors[0].debug_info,
+        if (response.data.errors) {
+            // RE - COMMENT 
+            if (response.data.errors[0].code == "1725007") {
+                let rePostParams = params
+                rePostParams.data.attachment = "text"
+                let secondRequest = await postComment(rePostParams);
+                console.log(`!!!!!!!!!Error ${response.data.errors[0].code} Handle -> Re-comment!!!!!!!!`, secondRequest);
+                return secondRequest
             }
-        } else {
-            console.log("Comment Success: ", response.data.data.comment_create.feedback_comment_edge.node.url);
-            if (response.data.data.comment_create.feedback_comment_edge.node.url === undefined) {
+            else {
+                let description = response.data.errors[0].description.__html ?
+                    response.data.errors[0].description.__html :
+                    response.data.errors[0].description
+                console.log("Comment Fail: ", description);
                 return {
                     isError: true,
-                    description: "Comment success but can't get comment link",
+                    description: description + ":" + response.data.errors[0].debug_info,
                 }
-            } else
+            }
+        } else {
+            if (!response.data.data) {
+                return {
+                    isError: true,
+                    description: "Comment fail",
+                }
+            } else {
+                console.log("Comment Success: ", response.data.data.comment_create.feedback_comment_edge.node.url);
                 return {
                     isError: false,
                     comment_link: response.data.data.comment_create.feedback_comment_edge.node.url
                 }
+            }
         }
-
 
     }
 
@@ -1050,6 +1101,7 @@
             case _string.__r_group_comment.__decode():
                 fun = postComment
                 break
+
         }
         if (fun) {
             handleAction(fun, message, sendResponse);

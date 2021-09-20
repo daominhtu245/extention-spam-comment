@@ -43,8 +43,28 @@
               Stop!</v-btn
             >
           </v-row>
+
           <!-- SELECT PAGE TO USE -->
           <v-row style="margin: 15px; justify-content: center">
+            <v-col
+              sm="12"
+              style="
+                padding: 0px;
+                margin: 0px;
+                display: flex;
+                justify-content: center;
+                align-items: baseline;
+              "
+            >
+              <v-checkbox
+                hide-details
+                class="shrink mt-4"
+                value="images"
+                v-model="autoSkip"
+              >
+              </v-checkbox>
+              <p>{{ $t("auto_skip") }}</p>
+            </v-col>
             <v-col sm="12" style="padding: 0px; margin: 0px">
               <p
                 style="
@@ -72,6 +92,7 @@
               </v-select>
             </v-col>
           </v-row>
+
           <!-- Current GROUP -->
           <v-row
             v-html="currentGroup"
@@ -177,6 +198,7 @@ export default {
 
   data() {
     return {
+      autoSkip: false,
       selectedPage: [],
       isProgressing: false,
       progressBar: 0,
@@ -263,6 +285,8 @@ export default {
       "minTime",
       "maxTime",
       "regime",
+      "customPostList",
+      "isFocusMode",
     ]),
   },
 
@@ -287,7 +311,7 @@ export default {
         this.handleSpin();
         return this.content;
       } catch (error) {
-        console.log(error);
+        console.log("Combine Content Fail:",error);
       }
     },
     handleTime() {
@@ -356,7 +380,7 @@ export default {
       let customListId = customListGroup.map((group) => group.id);
       allGroup = allGroup.concat(customListGroup);
       listGroupId = listGroupId.concat(customListId);
-      if (listGroupId.length == 0) {
+      if (listGroupId.length == 0 && !this.isFocusMode) {
         alert(this.$t("pls_choice_post"));
         return;
       }
@@ -367,8 +391,8 @@ export default {
       // Time delay for each comment
       let timeGetPost = 0,
         timeComment = 0;
-
       // PROGRESS CONTROL
+      this.errorCount = [];
       this.isProgressing = true;
       this.sendding = listGroupId.length * this.$store.state.limitPost;
       this.numSend = this.sendding;
@@ -379,56 +403,107 @@ export default {
       this.currentGroup = `<p style="color:#9c27b0;font-weight:bold"> ${this.$t(
         "start_comment_process"
       )}</p>`;
+      switch (this.isFocusMode) {
+        case true:
+          if (this.customPostList.length <= 0) {
+            alert("Empty Post List");
+            this.stopComment();
+            return;
+          }
+          this.sendding =
+            this.customPostList.length * this.$store.state.limitPost;
+          this.numSend = this.sendding;
+          for (const group of this.customPostList) {
+            let step = parseInt(
+              this.choiceTime === "range"
+                ? getRndInteger(this.minTime, this.maxTime)
+                : this.timeDelay
+            );
+            timeGetPost += step;
+            for (let i = 0; i < this.$store.state.limitPost; i++) {
+              let getPostTimeout = setTimeout(async () => {
+                let postList = group.postId;
+                // IF FIND POST FAIL
+                if (postList.length == 0) {
+                  this.skipEmptyPost(group);
+                } else {
+                  postList.map((postId) => {
+                    let comment = this.combineContent(group);
+                    // XÁC ĐỊNH GROUP ĐANG TÌM POST
+                    this.currentGroup = `<p style="color:#0084c6;font-weight:bold"> ${
+                      this.$t("find_post") + group.name
+                    }</p>`;
+                    //Start comment
+                    timeComment += step;
+                    let getCommentTimeout = setTimeout(() => {
+                      //XÁC ĐỊNH GROUP ĐANG COMMENT
+                      this.currentGroup = `<p style="color:#4caf50;font-weight:bold"> ${
+                        this.$t("create_comment") + group.name
+                      }</p>`;
 
-      for (const group of allGroup) {
-        if (listGroupId.indexOf(group.id) > -1) {
-          // GET POST OF GROUP LOOP
-          let step = parseInt(
-            this.choiceTime === "range"
-              ? getRndInteger(this.minTime, this.maxTime)
-              : this.timeDelay
-          );
-          timeGetPost += step;
-          let getPostTimeout = setTimeout(async () => {
-            let postList = await this.getGroupPost(group);
-            //let postList = ["123"];
-            postList.map((postId) => {
-              let comment = this.combineContent(group);
-              // XÁC ĐỊNH GROUP ĐANG TÌM POST
-              this.currentGroup = `<p style="color:#0084c6;font-weight:bold"> ${
-                this.$t("find_post") + group.name
-              }</p>`;
-              //Start comment
-              timeComment += step;
-              let getCommentTimeout = setTimeout(() => {
-                // console.log("Comment:", comment);
-                //XÁC ĐỊNH GROUP ĐANG COMMENT
-                this.currentGroup = `<p style="color:#4caf50;font-weight:bold"> ${
-                  this.$t("create_comment") + group.name
-                }</p>`;
+                      this.postComment(postId, comment, group);
+                    }, timeComment * 1000);
+                    this.addOnSendding(group.id, "comment", getCommentTimeout);
+                  });
+                }
+              }, timeGetPost * 1000);
+              this.addOnSendding(group.id, "post", getPostTimeout);
+            }
+          }
+          break;
 
-                this.postComment(postId, comment, group);
-              }, timeComment * 1000);
-              this.onSendding.push({
-                group: group.id,
-                type: "comment",
-                timeOutId: getCommentTimeout,
-              });
-            });
-          }, timeGetPost * 1000);
-          this.onSendding.push({
-            group: group.id,
-            type: "post",
-            timeOutId: getPostTimeout,
-          });
-        }
+        default:
+          for (const group of allGroup) {
+            if (listGroupId.indexOf(group.id) > -1) {
+              // GET POST OF GROUP LOOP
+              let step = parseInt(
+                this.choiceTime === "range"
+                  ? getRndInteger(this.minTime, this.maxTime)
+                  : this.timeDelay
+              );
+              timeGetPost += step;
+              let getPostTimeout = setTimeout(async () => {
+                let postList = await this.getGroupPost(group);
+                if (postList.length == 0) {
+                  this.skipEmptyPost(group);
+                } else {
+                  postList.map((postId) => {
+                    let comment = this.combineContent(group);
+                    // XÁC ĐỊNH GROUP ĐANG TÌM POST
+                    this.currentGroup = `<p style="color:#0084c6;font-weight:bold"> ${
+                      this.$t("find_post") + group.name
+                    }</p>`;
+                    //Start comment
+                    timeComment += step;
+                    let getCommentTimeout = setTimeout(() => {
+                      //XÁC ĐỊNH GROUP ĐANG COMMENT
+                      this.currentGroup = `<p style="color:#4caf50;font-weight:bold"> ${
+                        this.$t("create_comment") + group.name
+                      }</p>`;
+
+                      this.postComment(postId, comment, group);
+                    }, timeComment * 1000);
+                    this.addOnSendding(group.id, "comment", getCommentTimeout);
+                  });
+                }
+              }, timeGetPost * 1000);
+              this.addOnSendding(group.id, "post", getPostTimeout);
+            }
+          }
+          break;
       }
     },
 
+    addOnSendding(groupId, type, timeOutId) {
+      this.onSendding.push({
+        group: groupId,
+        type: type,
+        timeOutId: timeOutId,
+      });
+    },
+
     async getAccountList() {
-      console.log("Trgger get account list");
       let accountLists = await this.$store.dispatch("listAccount", "");
-      console.log("Final Account List: ", accountLists);
       this.accountList = accountLists;
     },
 
@@ -437,9 +512,36 @@ export default {
         this.errorCount.push(groupId);
         return false;
       } else {
-        this.stopCommentInGroup(groupId);
-        return true;
+        let count = 0;
+        for (const groupID of this.errorCount) {
+          if (groupID == groupId) {
+            count++;
+          }
+        }
+        if (count == 2) {
+          this.stopCommentInGroup(groupId);
+          return true;
+        } else {
+          this.errorCount.push(groupId);
+          return false;
+        }
       }
+    },
+
+    skipEmptyPost(group) {
+      this.currentGroup = `<p style="color:red;font-weight:bold"> ${
+        this.$t("find_post_fail") + group.name
+      }</p>`;
+      this.logger += `<p style="color:red;font-weight:bold"> ${
+        this.$t("find_post_fail") + group.name
+      }</p>`;
+      this.sendding -= this.$store.state.limitPost;
+      this.error += parseInt(this.$store.state.limitPost);
+      if (this.sendding < 0) {
+        this.sendding = 0;
+      }
+      this.progressBar =
+        (1 - parseFloat(this.sendding) / parseFloat(this.numSend)) * 100;
     },
 
     stopCommentInGroup(groupId) {
@@ -449,11 +551,11 @@ export default {
         }
       }
       let limit = this.$store.state.limitPost;
-      this.error += limit - 2;
-      this.sendding -= limit - 2;
-      if(this.sendding < 0){
+      this.error += limit - 3;
+      this.sendding -= limit - 3;
+      if (this.sendding < 0) {
         this.sendding = 0;
-        this.error = this.numSend - this.success
+        this.error = this.numSend - this.success;
       }
       this.progressBar =
         (1 - parseFloat(this.sendding) / parseFloat(this.numSend)) * 100;
@@ -466,6 +568,7 @@ export default {
       this.progressBar = 0;
       this.sendding = 0;
       this.onSendding = [];
+      this.errorCount = [];
       this.isProgressing = false;
       this.currentGroup = `<p style="color:red;font-weight:bold"> ${this.$t(
         "cancel_comment_process"
@@ -475,8 +578,6 @@ export default {
     handleRegime(contents) {
       let comment = contents;
       let attachment = "text";
-      // console.log("Origin Attachment Array: ", attachmentArray);
-      // let attachmentArray = this.attachment;
 
       //Hande Text
       if (!this.regime.includes("Text")) {
@@ -494,27 +595,20 @@ export default {
       } else {
         attachmentData = null;
       }
-      console.log("COMMENT ATTACHMENT TYPE:: ", attachment);
-      console.log("COMMENT ATTACHMENT DATA: ", attachmentData);
       if (this.regime.includes("Link")) {
         const dt = this.attachmentData["link"];
         comment += this.randomLink
           ? dt[Math.floor(Math.random() * dt.length)]
           : dt[0];
       }
-      console.log("Final Comment :", comment);
-      console.log("Final Attachment :", attachmentData);
     },
     setSelectedPage(value) {
       this.selectedPage = value;
-      console.log("selectedPage = ", this.selectedPage);
     },
 
     async postComment(postId, comment, group) {
       // Handle Upload Attachment
       let attachment = "text";
-      // console.log("Origin Attachment Array: ", attachmentArray);
-      // let attachmentArray = this.attachment;
       if (this.regime.includes("Random")) {
         this.$store.commit("set_regime", ["Random"]);
         let regimeOption = ["Text", "Image", "Link"];
@@ -549,11 +643,15 @@ export default {
           : dt[0];
       }
       let pageId = null;
+      let selectedPage = null;
       if (this.selectedPage.length > 0) {
         pageId =
           this.selectedPage[
             Math.floor(Math.random() * this.selectedPage.length)
           ];
+        selectedPage = this.accountList.filter((value, index) => {
+          return value.id == pageId;
+        });
       }
       this.$store
         .dispatch("comment", {
@@ -566,44 +664,55 @@ export default {
         })
         .then(async (result) => {
           let now = new Date();
-          let currentTime = now.getHours()+":"+now.getMinutes()+":"+now.getSeconds();
+          let currentTime =
+            now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds();
           if (this.sendding > 0) {
             this.sendding -= 1;
           }
           if (result.isError) {
+            console.log("Sent Comment Error:",result);
             this.error++;
             this.logger +=
-              '<p style="color: #ff312a">' +currentTime+" "+
+              '<p style="color: #ff312a">' +
+              currentTime +
+              " " +
               this.$t("error_post") +
               ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
-              group.id +
+              postId +
               '" target="_blank">' +
               group.name +
-              "</a>: " +
+              "</a> , by " +
+              (selectedPage ? selectedPage[0].name : "User") +
+              ": " +
               result.description +
               "</p>";
-            let isSkip = this.setErrorCount(group.id);
+            let isSkip = this.autoSkip ? this.setErrorCount(group.id) : false;
             if (isSkip) {
               this.logger +=
-                '<p style="color: #ff312a">' +currentTime+" "+
+                '<p style="color: #ff312a">' +
+                currentTime +
+                " " +
                 this.$t("skip_group") +
                 ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
                 group.id +
                 '" target="_blank">' +
                 group.name +
-                "</a>: " +
+                "</a> !!!!! " +
                 "</p>";
             }
           } else {
             this.success++;
             this.logger +=
-              '<p style="color: #008037">' +currentTime+" "+
+              '<p style="color: #008037">' +
+              currentTime +
+              " " +
               this.$t("success_post") +
               ' <a style="color: #1e55e3" href="https://www.facebook.com/' +
               group.id +
               '" target="_blank">' +
               group.name +
-              "</a>," +
+              "</a>, by " +
+              (selectedPage ? selectedPage[0].name : "User") +
               " " +
               this.$t("view") +
               '  <a style="color: #1e55e3" href="' +

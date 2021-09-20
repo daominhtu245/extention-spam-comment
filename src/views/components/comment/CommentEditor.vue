@@ -364,17 +364,21 @@
       </v-row>
       <!-- Chế độ gửi -->
       <v-row class="pt-0">
-        <v-col sm="12"><p style="color:green;font-weight:bold">{{$t("label_select_regime")}}</p></v-col>
-       <v-col sm="12" style="margin:0px;padding:0px">
+        <v-col sm="12"
+          ><p style="color: green; font-weight: bold">
+            {{ $t("label_select_regime") }}
+          </p></v-col
+        >
+        <v-col sm="12" style="margin: 0px; padding: 0px">
           <v-select
-          :items="regimeOption"
-          item-text="text"
-          item-value="value"
-          :label="$t('label_regime')"
-          solo
-          v-model="choiceRegime"
-        ></v-select>
-       </v-col>
+            :items="regimeOption"
+            item-text="text"
+            item-value="value"
+            :label="$t('label_regime')"
+            solo
+            v-model="choiceRegime"
+          ></v-select>
+        </v-col>
         <!-- <v-radio-group
           v-model="choiceRegime"
           row
@@ -663,8 +667,7 @@ export default {
         }
       }
       this.content[i] = content;
-      document.getElementById(`content-${i}`).value =
-        this.content[i];
+      document.getElementById(`content-${i}`).value = this.content[i];
       this.$store.commit("set_content", this.content);
     },
 

@@ -37,8 +37,9 @@
     "start_post": "BẮT ĐẦU ĐĂNG BÀI",
     "pls_choice_post": "Vui lòng chọn group.",
     "pls_time": "Tốc độ max đang nhỏ hơn tốc độ min, vui lòng chọn lại.",
-    "find_post":"Đang tìm bài viết tại group: ",
-    "create_comment":"Đang comment vào group: ",
+    "find_post":"Đang tìm bài viết tại UID: ",
+    "find_post_fail":"Không tìm thấy bài viết nào tại UID: ",
+    "create_comment":"Đang comment vào UID: ",
     "complete_comment":"Đã hoàn tất tiến trình",
     "stream_link_wrong": "Định dang link video stream không đúng",
     "total": "Tổng",
@@ -93,7 +94,11 @@
     "or": "hoặc",
     "label_add_custom_group":"Nhập ID Group, mỗi group cách nhau 1 khoảng trắng. VD: 123456789  123456666",
     "invalid_group_id":"Id của group không hợp lệ tại vị trí: ",
+    "invalid_post_id":"Id của post không hợp lệ tại vị trí: ",
     "use_page":"Lựa chọn page sử dụng để comment (bỏ trống nếu không cần)",
     "skip_group":"Xảy ra lỗi quá 2 lần, tự động bỏ qua group: ",
-    "label_select_regime":"Lựa chọn chế độ comment"
+    "label_select_regime":"Lựa chọn chế độ comment",
+    "focus_post":"Spam liên tục vào 1(nhiều) bài post? ",
+    "labe_focus_post":"Nhập ID của các post cần spam",
+    "auto_skip":"Tự động bỏ qua các group gặp lỗi"
 }

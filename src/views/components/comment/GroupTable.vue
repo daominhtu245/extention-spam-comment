@@ -48,6 +48,7 @@
         >
       </template>
     </v-data-table>
+    <!-- CUSTOM GROUP -->
     <v-card-title>
       3. {{ $t("add_custom_group") }}
       <v-spacer></v-spacer>
@@ -55,7 +56,20 @@
     <v-textarea
       style="margin: 15px"
       :placeholder="$t('label_add_custom_group')"
-      @change="selectCustomId"
+      @change="selectCustomGroup"
+    >
+    </v-textarea>
+    <!-- CUSTOm POST -->
+    <v-card-title>
+      4. {{ $t("focus_post") }}
+      <v-checkbox v-model="isFocusMode" @change="setFocusMode"></v-checkbox>
+      <v-spacer></v-spacer>
+    </v-card-title>
+    <v-textarea
+      :disabled="!isFocusMode"
+      style="margin: 15px"
+      :placeholder="$t('labe_focus_post')"
+      @change="selectCustomPost"
     >
     </v-textarea>
   </v-card>
@@ -66,6 +80,7 @@ export default {
   name: "GroupTable",
   data() {
     return {
+      isFocusMode: false,
       singleSelect: false,
       selected: [],
       headers: [
@@ -211,10 +226,15 @@ export default {
       }
       this.$store.commit("set_groups", this.selectedList);
     },
+    // Kích hoạt chế độ focus
+    setFocusMode(value) {
+      this.$store.commit("set_focus_mode", value);
+      console.log("Focus Mode: ", this.$store.state.isFocusMode);
+    },
     //Nhập Id tùy chọn
-    selectCustomId(value) {
+    selectCustomGroup(value) {
       value = value.replaceAll(/(\r\n|\n|\r)/gm, " ");
-      console.log("Raw custom group:",value);
+      console.log("Raw custom group:", value);
       let validChar = [" ", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
       for (let i = 0; i < value.length; i++) {
         if (!validChar.includes(value[i])) {
@@ -224,11 +244,38 @@ export default {
       }
       let idArray = value.replaceAll(/\s+/g, " ");
       idArray = idArray.split(" ");
-      let customListGroup = idArray.map((id) => {
-        return { id: id, name: id };
-      });
+      let customListGroup = [];
+      for (let i = 0; i < idArray.length; i++) {
+        const id = idArray[i];
+        if (id != "") {
+          customListGroup.push({ id: id, name: "!" + id + "!" });
+        }
+      }
       this.$store.commit("set_custom_groupList", customListGroup);
       console.log("Custom Group:", this.$store.state.customGroupList);
+    },
+    //Nhập Id tùy chọn
+    selectCustomPost(value) {
+      value = value.replaceAll(/(\r\n|\n|\r)/gm, " ");
+      console.log("Raw custom post:", value);
+      let validChar = [" ", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+      for (let i = 0; i < value.length; i++) {
+        if (!validChar.includes(value[i])) {
+          alert(this.$t("invalid_post_id") + i);
+          return;
+        }
+      }
+      let idArray = value.replaceAll(/\s+/g, " ");
+      idArray = idArray.split(" ");
+      let customListPost = idArray.map((value, index) => {
+        return {
+          id: value + "!",
+          postId: [value],
+          name: `Group của post ${index + 1}`,
+        };
+      });
+      this.$store.commit("set_custom_postList", customListPost);
+      console.log("Custom Post:", this.$store.state.customPostList);
     },
   },
 };

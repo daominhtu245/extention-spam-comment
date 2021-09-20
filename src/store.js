@@ -28,13 +28,21 @@ export default new Vuex.Store({
     maxTime: 10,
     regime: ["Text"],
     customGroupList: [],
-    account_list: []
+    customPostList: [],
+    account_list: [],
+    isFocusMode: false,
   },
 
   getters: {
   },
 
   mutations: {
+    set_focus_mode: (state, data) => {
+      state.isFocusMode = data;
+    },
+    set_custom_postList: (state, data) => {
+      state.customPostList = data
+    },
     set_user_account: (state, data) => {
       state.account_list = data;
     },
@@ -107,7 +115,7 @@ export default new Vuex.Store({
       console.log("Trigger get account list store!!!");
       return new Promise(async (resolve, reject) => {
         const accountList = await UserRepository.getAccount(token);
-       
+
         commit("set_user_account", accountList.data)
         resolve(accountList.data)
       })
