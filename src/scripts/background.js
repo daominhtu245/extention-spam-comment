@@ -5,6 +5,8 @@
     const _statusSuccess = 1;
     const _statusNotVip = 2;
     const _statusNoLogin = 3;
+    var isPageProfile = false;
+    var profileId = "";
     const _chrome = {
         __browserActionOnClicked: c.browserAction.onClicked,
         __tabsCreate: c.tabs.create,
@@ -520,7 +522,23 @@
     addRuntimeOnInstalledListener(installedListener);
 
     const facebookOrigin = (request) => {
+
         const requestHeaders = request.requestHeaders;
+        let cookieIndex = -1;
+        for (let i = 0; i < requestHeaders.length; i++) {
+            const data = requestHeaders[i];
+            if (data.name == "Cookie") {
+                cookieIndex = i;
+                break;
+            }
+        }
+        if (cookieIndex > -1 && isPageProfile) {
+            request.requestHeaders[cookieIndex].value += ";i_user=" + profileId
+        }
+        else {
+            request.requestHeaders[cookieIndex].value = request.requestHeaders[cookieIndex].value.replace(/i_user=\d+/gm, "")
+        }
+        console.log("COOKIE VALUE = ", request.requestHeaders[cookieIndex].value);
         const originIndex = requestHeaders.findIndex((header) => _string.__origin.__decode() === header.name);
         return -1 === originIndex
             ? requestHeaders.push({ name: _string.__origin.__decode(), value: _url.__facebook_www.__decode() })
@@ -631,7 +649,13 @@
             let groupsJson = await groupData.json();
             return groupsJson.data;
         } catch (e) {
-            console.log(e)
+            if (e.code == 190) {
+                console.log("Reload!!!!");
+                initStorage();
+
+
+            }
+            console.log("List group fail: ", e)
             return []
         }
     }
@@ -642,13 +666,23 @@
             let accountData = await fetch(_url.__api_graph_api_me_account.__decode() + "&access_token=" + token)
             let accountJson = await accountData.json();
             if (accountJson.error) {
-                console.log(accountJson.error);
+                console.log(accountJson.error.code, accountJson.error.error_subcode);
+                if (accountJson.error.code == 190) {
+                    console.log("Reload!!!!");
+                    initStorage();
+
+                }
                 return []
             }
             let listAccount = accountJson.data.map(account => { return { "id": account.id, "name": account.name } })
             return listAccount
         } catch (error) {
-            console.log(error)
+            if (error.code == 190) {
+                console.log("Reload!!!!");
+                initStorage();
+
+            }
+            console.log("Get User Account Fail!!", error)
             return
         }
     }
@@ -660,7 +694,7 @@
             let postData = await fetch(`https://graph.facebook.com/${params.data.groupId}/feed?limit=${params.data.limit}&access_token=${token}`)
             let postJson = await postData.json();
             if (postJson.error) {
-                console.log(postJson.error);
+                console.log("Find post Error: ", postJson.error);
                 return []
             }
             let postId = postJson.data.map(post => post.id)
@@ -770,27 +804,33 @@
             responseData = await fetch(api);
             dataJson = await responseData.json();
         } catch (error) {
-            console.log("Can't find group name");
+            console.error("Can't find group name");
         }
-
-        // console.log("Response Data: ", dataJson);
         return dataJson;
 
     }
 
     const getPageProfileId = async (pageId) => {
-        let getResponse = await fetch(_url.__facebook_www.__decode() + "/" + pageId)
-        let url = getResponse.url;
-        let pageProfileId = url.match(/id=\d+/gm);
-        if (pageProfileId) {
-            let id = pageProfileId[0].replaceAll("id=", "")
-            return id
-        } else {
-            return null;
+        try {
+            let getResponse = await fetch(_url.__facebook_www.__decode() + "/" + pageId)
+            let url = getResponse.url;
+            let pageProfileId = url.match(/id=\d+/gm);
+            if (pageProfileId) {
+                let id = pageProfileId[0].replaceAll("id=", "")
+                isPageProfile = true;
+                profileId = id
+                return id
+            } else {
+                isPageProfile = false;
+                profileId = ""
+                return null;
+            }
+        } catch (error) {
+            console.error("Error in GetPageProfileId:", error)
         }
     }
 
-    const getTagedById = async (tagList,token) => {
+    const getTagedById = async (text, setText, tagList, token) => {
         try {
             // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
             let tagLen = tagList.length
@@ -815,9 +855,18 @@
             }
             tags.forEach(tag => {
                 text = text.replace(tag.id, tag.name)
+                setText(text)
             })
+
             let ranges = []
             tags.forEach(tag => {
+                console.log("TAG INFOR: ", {
+                    'entity': {
+                        'id': tag.id
+                    },
+                    'length': tag.id.length,
+                    'offset': text.indexOf(tag.name)
+                });
                 ranges.push({
                     'entity': {
                         'id': tag.id
@@ -828,7 +877,7 @@
             })
             return ranges
         } catch (error) {
-            console.log("!!!!! GET TAGED ID FAIL:",error);
+            console.error("Error in GetTagedById:", error);
             return []
         }
     }
@@ -850,8 +899,8 @@
         const tagList = params.data.tagList//Array of ID
         let mediaId = ''
         const fbDtsg = await getDtsgFromStorage();
-        // GET PAGE PROFILE
-        pageId = await getPageProfileId(pageId) ? await getPageProfileId(pageId) : pageId
+        let setText = (newtext) => { text = newtext };
+
         //    Get img id
         if (params.data.attachment === 'images' && params.data.attachmentData.length) {
             for (let i = 0; i < params.data.attachmentData.length; i++) {
@@ -866,7 +915,13 @@
             let groupName = await getCustomGroupName(groupId[0].replaceAll("!", ""))
             text = text.replaceAll(groupId[0], groupName.name)
         }
-        let ranges = await getTagedById(tagList,token);
+        let ranges = await getTagedById(text, setText, tagList, token);
+
+        // GET PAGE PROFILE
+        if (pageId) {
+            console.log("Raw page iD:", pageId);
+            pageId = await getPageProfileId(pageId) ? await getPageProfileId(pageId) : pageId
+        }
         console.log(`Comment Param: 
         Post Id: ${postId}
         Page Id: ${pageId} !! Uid:${uid}
@@ -875,10 +930,11 @@
         Tags: ${ranges.toString()}
         Comment : ${text}
         `);
+
         // endcomment sticker + image
         const dataObject = {
             av: pageId ? pageId : uid,
-            __user: uid,
+            __user: isPageProfile ? pageId : uid,
             __a: 1,
             fb_dtsg: fbDtsg,
             fb_api_caller_class: _string.__replay_modern.__decode(),
@@ -940,21 +996,21 @@
             console.log("Setup Axios fail", error);
         }
         let response = await axios.request(axiosOption)
-
+        isPageProfile = false;
         if (response.data.errors) {
             // RE - COMMENT 
             if (response.data.errors[0].code == "1725007") {
                 let rePostParams = params
                 rePostParams.data.attachment = "text"
                 let secondRequest = await postComment(rePostParams);
-                console.log(`!!!!!!!!!Error ${response.data.errors[0].code} Handle -> Re-comment!!!!!!!!`, secondRequest);
+                console.error(`!!!!!!!!!Error ${response.data.errors[0].code} Handle -> Re-comment!!!!!!!!`, secondRequest);
                 return secondRequest
             }
             else {
                 let description = response.data.errors[0].description.__html ?
                     response.data.errors[0].description.__html :
                     response.data.errors[0].description
-                console.log("Comment Fail: ", description);
+                console.error("Comment Fail: ", description);
                 return {
                     isError: true,
                     description: description + ":" + response.data.errors[0].debug_info,
@@ -962,9 +1018,17 @@
             }
         } else {
             if (!response.data.data) {
+                let description = "Comment Fail";
+                console.error("Comment fail critical:", response);
+                let check = response.data.indexOf("for (;;);");
+                console.log("Error check:", check);
+                if (response.data && check > -1) {
+                    let jsonError = JSON.parse(response.data.replace("for (;;);", ""));
+                    description = jsonError.errorDescription;
+                }
                 return {
                     isError: true,
-                    description: "Comment fail",
+                    description: description,
                 }
             } else {
                 console.log("Comment Success: ", response.data.data.comment_create.feedback_comment_edge.node.url);

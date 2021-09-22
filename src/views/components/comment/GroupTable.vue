@@ -2,6 +2,13 @@
   <v-card class="px-0 py-0 mt-5 mb-0 pt-3">
     <v-card-title>
       2. {{ $t("select_group") }}
+      <v-icon
+        color="blue darken-3"
+        normal
+        @click="reloadPage
+        "
+        >mdi-autorenew
+      </v-icon>
       <v-spacer></v-spacer>
     </v-card-title>
     <v-row style="padding: 10px">
@@ -177,6 +184,10 @@ export default {
       //   "set_groups",
       //   this.items.filter((item) => groupChoice.includes(item.id))
       // );
+    },
+    reloadPage() {
+      location.reload();
+      return false
     },
     // Lấy các group
     async getPage() {

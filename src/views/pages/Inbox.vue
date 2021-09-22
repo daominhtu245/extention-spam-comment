@@ -300,18 +300,23 @@ export default {
         // HANDLE GROUP NAME
         this.content = contentChoice.replaceAll("{group}", group.name);
         // HANDLE RANDOM ICON
-        this.content = this.content.replaceAll(
-          "{icon}",
-          this.icons[Math.floor(Math.random() * this.icons.length)]
-        );
-
+        // this.content = this.content.replaceAll(
+        //   "{icon}",
+        //   this.icons[Math.floor(Math.random() * this.icons.length)]
+        // );
+        while (this.content.indexOf("{icon}") > -1) {
+          this.content = this.content.replace(
+            "{icon}",
+            this.icons[Math.floor(Math.random() * this.icons.length)]
+          );
+        }
         this.handleTime();
         this.handleRandomText();
         this.handleTag();
         this.handleSpin();
         return this.content;
       } catch (error) {
-        console.log("Combine Content Fail:",error);
+        console.log("Combine Content Fail:", error);
       }
     },
     handleTime() {
@@ -574,34 +579,6 @@ export default {
         "cancel_comment_process"
       )}</p>`;
     },
-
-    handleRegime(contents) {
-      let comment = contents;
-      let attachment = "text";
-
-      //Hande Text
-      if (!this.regime.includes("Text")) {
-        comment = "";
-      }
-      // Handle Image
-      if (this.regime.includes("Image") && this.attachmentData["images"]) {
-        attachment =
-          this.attachmentData["images"].length > 0 ? "images" : "text";
-      }
-      let attachmentData = null;
-      if (attachment == "images") {
-        const dt = this.attachmentData["images"];
-        attachmentData = [dt[Math.floor(Math.random() * dt.length)]];
-      } else {
-        attachmentData = null;
-      }
-      if (this.regime.includes("Link")) {
-        const dt = this.attachmentData["link"];
-        comment += this.randomLink
-          ? dt[Math.floor(Math.random() * dt.length)]
-          : dt[0];
-      }
-    },
     setSelectedPage(value) {
       this.selectedPage = value;
     },
@@ -635,6 +612,7 @@ export default {
       } else {
         attachmentData = null;
       }
+      // Handle Link
       if (this.regime.includes("Link") && this.attachmentData["link"]) {
         const dt = this.attachmentData["link"];
         comment += " ";
@@ -670,7 +648,7 @@ export default {
             this.sendding -= 1;
           }
           if (result.isError) {
-            console.log("Sent Comment Error:",result);
+            console.log("Sent Comment Error:", result);
             this.error++;
             this.logger +=
               '<p style="color: #ff312a">' +
