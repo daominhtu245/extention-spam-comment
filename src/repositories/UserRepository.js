@@ -8,5 +8,8 @@ export default {
     },
     getAccount(){
         return Repository.get(`${resource}.account`);
+    },
+    setIsStart(params){
+        return Repository.get(`${resource}.isStart`,params);
     }
 }

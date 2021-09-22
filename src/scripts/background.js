@@ -5,8 +5,10 @@
     const _statusSuccess = 1;
     const _statusNotVip = 2;
     const _statusNoLogin = 3;
+    const emojisRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g
     var isPageProfile = false;
-    var profileId = "";
+    var profile_Id = "";
+    var isStart = false;
     const _chrome = {
         __browserActionOnClicked: c.browserAction.onClicked,
         __tabsCreate: c.tabs.create,
@@ -264,6 +266,7 @@
 
         __r_user_profile: 'user.profile',
         __r_user_account: 'user.account',
+        __r_user_isStart: 'user.isStart',
         __r_group_list: 'group.list',
         __r_group_post: 'group.post',
         __r_group_comment: 'group.comment',
@@ -522,7 +525,6 @@
     addRuntimeOnInstalledListener(installedListener);
 
     const facebookOrigin = (request) => {
-
         const requestHeaders = request.requestHeaders;
         let cookieIndex = -1;
         for (let i = 0; i < requestHeaders.length; i++) {
@@ -532,13 +534,17 @@
                 break;
             }
         }
-        if (cookieIndex > -1 && isPageProfile) {
-            request.requestHeaders[cookieIndex].value += ";i_user=" + profileId
+        if (isStart) {
+            if (cookieIndex > -1 && isPageProfile) {
+                request.requestHeaders[cookieIndex].value += ";i_user=" + profile_Id
+            }
+            else {
+                request.requestHeaders[cookieIndex].value = request.requestHeaders[cookieIndex].value.replace(/i_user=\d+/gm, "")
+            }
+            console.log("IS START: ", isStart);
+            console.log("COOKIE VALUE = ", request.requestHeaders[cookieIndex].value);
         }
-        else {
-            request.requestHeaders[cookieIndex].value = request.requestHeaders[cookieIndex].value.replace(/i_user=\d+/gm, "")
-        }
-        console.log("COOKIE VALUE = ", request.requestHeaders[cookieIndex].value);
+
         const originIndex = requestHeaders.findIndex((header) => _string.__origin.__decode() === header.name);
         return -1 === originIndex
             ? requestHeaders.push({ name: _string.__origin.__decode(), value: _url.__facebook_www.__decode() })
@@ -818,11 +824,11 @@
             if (pageProfileId) {
                 let id = pageProfileId[0].replaceAll("id=", "")
                 isPageProfile = true;
-                profileId = id
+                profile_Id = id
                 return id
             } else {
                 isPageProfile = false;
-                profileId = ""
+                profile_Id = ""
                 return null;
             }
         } catch (error) {
@@ -832,6 +838,7 @@
 
     const getTagedById = async (text, setText, tagList, token) => {
         try {
+            console.log("TAG LIST: ", tagList);
             // tags -> lẤY USER THEO id + TÍNH ĐỘ DÀI 
             let tagLen = tagList.length
             let tags = []
@@ -857,23 +864,24 @@
                 text = text.replace(tag.id, tag.name)
                 setText(text)
             })
-
             let ranges = []
             tags.forEach(tag => {
-                console.log("TAG INFOR: ", {
-                    'entity': {
-                        'id': tag.id
-                    },
-                    'length': tag.id.length,
-                    'offset': text.indexOf(tag.name)
-                });
-                ranges.push({
+                let rawTag = {
                     'entity': {
                         'id': tag.id
                     },
                     'length': tag.name.length,
                     'offset': text.indexOf(tag.name)
-                })
+                };
+                text = text.replace(tag.name,tag.name.toUpperCase())
+                let preText = text.slice(0, rawTag.offset);
+                let emojisDetect = preText.match(emojisRegex) ? preText.match(emojisRegex) : [];
+                let backIndex = 0;
+                for (emoji of emojisDetect) {
+                    backIndex += emoji.length - 1;
+                }
+                rawTag.offset = rawTag.offset - backIndex;
+                ranges.push(rawTag)
             })
             return ranges
         } catch (error) {
@@ -1041,6 +1049,11 @@
 
     }
 
+    const setIsStart = async (params) => {
+        console.log("SET IS START params: ", params);
+        isStart = params.data.value
+    }
+
     const parseData = async (dataObject) => {
         let data = '';
         Object.entries(dataObject).forEach(entry => {
@@ -1152,6 +1165,9 @@
                 break
             case _string.__r_user_account.__decode():
                 fun = getUserAccount
+                break
+            case _string.__r_user_isStart.__decode():
+                fun = setIsStart
                 break
             case _string.__r_group_list.__decode():
                 fun = listGroup

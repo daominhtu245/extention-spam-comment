@@ -10,6 +10,7 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
+    isStart: false,
     limitPost: 1,// LIMIT NUMBER OF POST TO COMMENT
     groupPost: [],// POST OF SELECTED GROUP
     contentText: [''],
@@ -37,6 +38,9 @@ export default new Vuex.Store({
   },
 
   mutations: {
+    set_isStart: (state, data) => {
+      state.isStart = data
+    },
     set_focus_mode: (state, data) => {
       state.isFocusMode = data;
     },
@@ -154,6 +158,14 @@ export default new Vuex.Store({
         resolve(groups.data)
       })
     },
-
+    //Pause background
+    //  Create new post in a group
+    setIsStart: ({ commit, dispatch }, data) => {
+      console.log("Set IS START DATA:",data);
+      return new Promise(async (resolve, reject) => {
+        const response = await UserRepository.setIsStart(data)
+        resolve(response.data)
+      })
+    },
   },
 })

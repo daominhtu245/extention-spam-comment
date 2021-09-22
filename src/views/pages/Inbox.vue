@@ -214,7 +214,8 @@ export default {
       dialog: false,
       content: "",
       icons: [
-        "🙂🙂",
+        "🙂",
+        "🙂",
         "😀",
         "😄",
         "😆",
@@ -222,7 +223,6 @@ export default {
         "😂",
         "🤣",
         "😊",
-        "☺️",
         "😌",
         "😉",
         "😏",
@@ -232,7 +232,6 @@ export default {
         "😙",
         "😚",
         "🤗",
-        "♥️",
         "💙",
         "😺",
         "😸",
@@ -242,6 +241,7 @@ export default {
         "😽",
         "🙀",
         "🌺",
+        "🔰",
       ],
       statusInboxList: {
         wait: {
@@ -377,7 +377,13 @@ export default {
       });
       return post.data;
     },
-
+    //Set isStart to background
+    async setIsStart(value) {
+      let post = await this.$store.dispatch("setIsStart", {
+        value: value,
+      });
+      return post.data;
+    },
     async startComment() {
       let listGroupId = this.$store.state.groups;
       let allGroup = this.$store.state.groupsList;
@@ -408,6 +414,7 @@ export default {
       this.currentGroup = `<p style="color:#9c27b0;font-weight:bold"> ${this.$t(
         "start_comment_process"
       )}</p>`;
+      this.setIsStart(true);
       switch (this.isFocusMode) {
         case true:
           if (this.customPostList.length <= 0) {
@@ -547,6 +554,10 @@ export default {
       }
       this.progressBar =
         (1 - parseFloat(this.sendding) / parseFloat(this.numSend)) * 100;
+      if (this.progressBar == 100) {
+        this.setIsStart(false)
+        this.isProgressing = false;
+      }
     },
 
     stopCommentInGroup(groupId) {
@@ -570,6 +581,7 @@ export default {
       for (let i = 0; i < this.onSendding.length; i++) {
         clearTimeout(this.onSendding[i].timeOutId);
       }
+      console.log("COOKIE ON STOP: ", document.cookie);
       this.progressBar = 0;
       this.sendding = 0;
       this.onSendding = [];
@@ -578,6 +590,7 @@ export default {
       this.currentGroup = `<p style="color:red;font-weight:bold"> ${this.$t(
         "cancel_comment_process"
       )}</p>`;
+      this.setIsStart(false);
     },
     setSelectedPage(value) {
       this.selectedPage = value;
@@ -706,6 +719,7 @@ export default {
               "complete_comment"
             )}</p>`;
             this.isProgressing = false;
+            this.setIsStart(false);
           }
         });
     },
